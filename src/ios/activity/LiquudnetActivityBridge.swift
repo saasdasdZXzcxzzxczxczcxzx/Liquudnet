@@ -13,11 +13,14 @@ import Foundation
 // (see IOS_DEPLOYMENT_TARGET), unlike LiquudnetWidgetExtension, which can
 // require iOS 16.1+ on its own since it's a separate optional extension.
 // Every method below guards its real work behind `if #available(iOS
-// 16.1, *)` and no-ops below that, so this file compiles and the engine
+// 16.2, *)` and no-ops below that, so this file compiles and the engine
 // can call it unconditionally on any supported iOS version - the
 // `@objc`-exposed methods themselves carry no `@available` annotation
 // (Objective-C has no concept of it), only their *implementations* branch
-// on iOS version at runtime.
+// on iOS version at runtime. 16.2, not 16.1: the ActivityContent-based
+// request/update/end APIs used below were introduced in iOS 16.2 (16.1
+// only has the older contentState-only overloads, which this code does
+// not use).
 @objc(LiquudnetActivityBridge)
 public class LiquudnetActivityBridge: NSObject {
     // Type-erased so the stored property itself doesn't need an
@@ -27,9 +30,9 @@ public class LiquudnetActivityBridge: NSObject {
 
     /// Starts the Live Activity if one isn't already running. No-op if one
     /// is already active (call `update` instead), if Live Activities are
-    /// disabled system-wide, or on iOS < 16.1.
+    /// disabled system-wide, or on iOS < 16.2.
     @objc public static func start(withStatus status: String) {
-        if #available(iOS 16.1, *) {
+        if #available(iOS 16.2, *) {
             guard activity == nil else { return }
             guard ActivityAuthorizationInfo().areActivitiesEnabled else { return }
             let state = LiquudnetActivityAttributes.ContentState(status: status)
@@ -54,7 +57,7 @@ public class LiquudnetActivityBridge: NSObject {
     /// Updates the running Live Activity's status text. No-op if none is
     /// running.
     @objc public static func update(withStatus status: String) {
-        if #available(iOS 16.1, *) {
+        if #available(iOS 16.2, *) {
             guard let typedActivity = activity as? Activity<LiquudnetActivityAttributes> else { return }
             let state = LiquudnetActivityAttributes.ContentState(status: status)
             let content = ActivityContent(state: state, staleDate: nil, relevanceScore: 0.0)
@@ -67,7 +70,7 @@ public class LiquudnetActivityBridge: NSObject {
     /// Ends the running Live Activity immediately. No-op if none is
     /// running.
     @objc public static func end() {
-        if #available(iOS 16.1, *) {
+        if #available(iOS 16.2, *) {
             guard let typedActivity = activity as? Activity<LiquudnetActivityAttributes> else { return }
             activity = nil
             Task {
@@ -77,7 +80,7 @@ public class LiquudnetActivityBridge: NSObject {
     }
 
     @objc public static var isRunning: Bool {
-        if #available(iOS 16.1, *) {
+        if #available(iOS 16.2, *) {
             return activity is Activity<LiquudnetActivityAttributes>
         }
         return false

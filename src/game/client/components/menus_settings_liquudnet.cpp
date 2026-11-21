@@ -118,7 +118,7 @@ void CMenus::RenderSettingsLiquudnet(CUIRect MainView)
 
 	MainView.HSplitTop(6.0f, nullptr, &MainView);
 	MainView.HSplitTop(34.0f, &Label, &MainView);
-	Ui()->DoLabel(&Label, Localize("iOS 16.1+ only. Starts a Live Activity shown in the Dynamic Island and on the Lock Screen, with a placeholder status for now."), 12.0f, TEXTALIGN_TL);
+	Ui()->DoLabel(&Label, Localize("iOS 16.2+ only. Starts a Live Activity shown in the Dynamic Island and on the Lock Screen, with a placeholder status for now."), 12.0f, TEXTALIGN_TL);
 
 	MainView.HSplitTop(10.0f, nullptr, &MainView);
 	MainView.HSplitTop(40.0f, &Button, &MainView);

@@ -701,7 +701,7 @@ public:
 	 * Starts or updates the Dynamic Island / Lock Screen Live Activity, or
 	 * ends it.
 	 *
-	 * Only implemented on iOS (16.1+; a no-op on older versions, and when
+	 * Only implemented on iOS (16.2+; a no-op on older versions, and when
 	 * Live Activities are disabled system-wide); a no-op everywhere else.
 	 *
 	 * Safe to call every frame: passing Active=true starts the activity on

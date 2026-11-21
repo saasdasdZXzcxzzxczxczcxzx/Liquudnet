@@ -98,7 +98,7 @@ bool IosConsumeGlassButtonTap();
  * Safe to call every frame, similar to IosSetGlassButtonFrame: passing
  * Active=true starts the activity on first call and just updates its
  * status text on later calls, and Active=false ends it (a no-op if it
- * isn't running). Also safe to call on iOS versions below 16.1 or when
+ * isn't running). Also safe to call on iOS versions below 16.2 or when
  * Live Activities are disabled system-wide: the bridge silently no-ops.
  *
  * @param Active Whether the Live Activity should currently be running.
