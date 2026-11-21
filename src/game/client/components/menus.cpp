@@ -1232,7 +1232,7 @@ void CMenus::RenderPopupFullscreen(CUIRect Screen)
 	}
 	else if(m_Popup == POPUP_FIRST_LAUNCH)
 	{
-		pTitle = Localize("Welcome to DDNet");
+		pTitle = Localize("Welcome to Liquudnet");
 		str_format(aBuf, sizeof(aBuf), "%s\n\n%s\n\n%s\n\n%s",
 			Localize("DDraceNetwork is a cooperative online game where the goal is for you and your group of tees to reach the finish line of the map. As a newcomer you should start on Novice servers, which host the easiest maps. Consider the ping to choose a server close to you."),
 			Localize("Use k key to kill (restart), q to pause and watch other players. See settings for other key binds."),
@@ -2558,7 +2558,7 @@ int CMenus::MenuImageScan(const char *pName, int IsDir, int DirType, void *pUser
 	str_truncate(MenuImage.m_aName, sizeof(MenuImage.m_aName), pName, str_length(pName) - str_length(pExtension));
 	pSelf->m_vMenuImages.push_back(MenuImage);
 
-	pSelf->RenderLoading(Localize("Loading DDNet Client"), Localize("Loading menu images"), 0);
+	pSelf->RenderLoading(Localize("Loading Liquudnet Client"), Localize("Loading menu images"), 0);
 
 	return 0;
 }
