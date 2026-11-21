@@ -1,6 +1,7 @@
 /* (c) Magnus Auvinen. See licence.txt in the root of the distribution for more information. */
 /* If you are missing that file, acquire a complete release at teeworlds.com.                */
 #include <base/dbg.h>
+#include <base/detect.h>
 #include <base/log.h>
 #include <base/math.h>
 #include <base/mem.h>
@@ -16,6 +17,10 @@
 // ft2 texture
 #include <ft2build.h>
 #include FT_FREETYPE_H
+
+#if defined(CONF_PLATFORM_IOS)
+#include <ios/ios_main.h>
+#endif
 
 #include <chrono>
 #include <cstddef>
@@ -1326,6 +1331,58 @@ public:
 			log_error("textrender", "Font index malformed: 'icon' must be a string");
 			Success = false;
 		}
+
+#if defined(CONF_PLATFORM_IOS)
+		// Use the real iOS system font (San Francisco) as the default face
+		// instead of the bundled DejaVu Sans, so text looks native. The
+		// font file can't be bundled (Apple's license doesn't allow
+		// shipping it), so it's loaded directly from its on-disk location
+		// in the OS, which IosGetSystemFontPath finds via CoreText. The
+		// bundled fonts loaded above are left in place as fallbacks, for
+		// any glyph San Francisco doesn't cover.
+		char aSystemFontPath[1024];
+		if(IosGetSystemFontPath(aSystemFontPath, sizeof(aSystemFontPath)))
+		{
+			void *pSystemFontData;
+			unsigned SystemFontDataSize;
+			if(Storage()->ReadFile(aSystemFontPath, IStorage::TYPE_ABSOLUTE, &pSystemFontData, &SystemFontDataSize))
+			{
+				// Peek at the primary face's family name before handing
+				// the buffer to LoadFontCollection (which takes ownership
+				// of registering every face in the file, but doesn't
+				// report any of their names back to the caller).
+				FT_Face PeekFace;
+				char aFamilyName[128] = "";
+				if(!FT_New_Memory_Face(m_FTLibrary, static_cast<FT_Byte *>(pSystemFontData), (FT_Long)SystemFontDataSize, 0, &PeekFace))
+				{
+					str_copy(aFamilyName, PeekFace->family_name);
+					FT_Done_Face(PeekFace);
+				}
+
+				if(aFamilyName[0] && LoadFontCollection(aSystemFontPath, static_cast<FT_Byte *>(pSystemFontData), (FT_Long)SystemFontDataSize))
+				{
+					m_vpFontData.push_back(pSystemFontData);
+					if(!m_pGlyphMap->SetDefaultFaceByName(aFamilyName))
+					{
+						log_error("textrender", "Loaded the iOS system font but failed to select it as the default face (family name '%s')", aFamilyName);
+					}
+				}
+				else
+				{
+					free(pSystemFontData);
+					log_error("textrender", "Failed to load the iOS system font from '%s', falling back to the bundled font", aSystemFontPath);
+				}
+			}
+			else
+			{
+				log_error("textrender", "Failed to read the iOS system font file '%s', falling back to the bundled font", aSystemFontPath);
+			}
+		}
+		else
+		{
+			log_error("textrender", "Failed to locate the iOS system font, falling back to the bundled font");
+		}
+#endif
 
 		json_value_free(pJsonData);
 		return Success;

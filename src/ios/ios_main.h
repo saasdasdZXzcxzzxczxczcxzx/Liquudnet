@@ -116,4 +116,30 @@ void IosSetLiveActivityActive(bool Active, const char *pStatusText);
  */
 bool IosIsLiveActivityRunning();
 
+/**
+ * Finds the on-disk path of the system UI font (San Francisco), so the
+ * engine's own FreeType-based text renderer can load it like any other
+ * bundled font file.
+ *
+ * @ingroup iOS
+ *
+ * There is no supported way to bundle San Francisco itself (its license
+ * doesn't allow shipping the font file in a non-Apple app), and its
+ * internal FreeType-visible family name (".SFUI...", "SFUI-Text", ...) is
+ * a private implementation detail Apple explicitly says not to hardcode,
+ * since it has changed between iOS versions. Instead this asks CoreText
+ * for the system font's own file URL via the public
+ * `CTFontCreateUIFontForLanguage`/`kCTFontURLAttribute` APIs, so the
+ * actual family name can be read back from the font file itself (with
+ * FreeType, after loading it) instead of being guessed.
+ *
+ * @param pBuf Buffer that receives the UTF-8 path on success.
+ * @param BufSize Size of `pBuf`, in bytes.
+ *
+ * @return `true` on success, `false` if the system font's file couldn't be
+ * located (in which case `pBuf` is left untouched and the engine should
+ * fall back to its own bundled fonts, as it does on every other platform).
+ */
+bool IosGetSystemFontPath(char *pBuf, size_t BufSize);
+
 #endif // IOS_IOS_MAIN_H
