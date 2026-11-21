@@ -2685,10 +2685,10 @@ if(CLIENT)
     components/flow.h
     components/freezebars.cpp
     components/freezebars.h
-    components/glass_backdrop.cpp
-    components/glass_backdrop.h
     components/ghost.cpp
     components/ghost.h
+    components/glass_backdrop.cpp
+    components/glass_backdrop.h
     components/hud.cpp
     components/hud.h
     components/important_alert.cpp

@@ -19,61 +19,61 @@
 
 namespace
 {
-// Small, fixed destination resolution for the blurred backdrop. The blur
-// itself (an O(Width*Height) box filter run a few times) is the expensive
-// part, so downsampling to this size first - rather than blurring the full
-// capture - is what keeps this affordable on a phone every ~250ms.
-constexpr int MAX_BACKDROP_WIDTH = 480;
-constexpr int MIN_BACKDROP_HEIGHT = 32;
-constexpr int BLUR_PASSES = 3;
+	// Small, fixed destination resolution for the blurred backdrop. The blur
+	// itself (an O(Width*Height) box filter run a few times) is the expensive
+	// part, so downsampling to this size first - rather than blurring the full
+	// capture - is what keeps this affordable on a phone every ~250ms.
+	constexpr int MAX_BACKDROP_WIDTH = 480;
+	constexpr int MIN_BACKDROP_HEIGHT = 32;
+	constexpr int BLUR_PASSES = 3;
 
-void BoxBlurInPlace(uint8_t *pData, int Width, int Height)
-{
-	// Separable 3x3 box blur, horizontal pass then vertical, repeated
-	// BLUR_PASSES times to approximate a wider, softer falloff cheaply.
-	// Not a real gaussian, just enough to kill the "flat gradient" look.
-	std::vector<uint8_t> vScratch(static_cast<size_t>(Width) * Height * 4);
-	for(int Pass = 0; Pass < BLUR_PASSES; Pass++)
+	void BoxBlurInPlace(uint8_t *pData, int Width, int Height)
 	{
-		for(int y = 0; y < Height; y++)
+		// Separable 3x3 box blur, horizontal pass then vertical, repeated
+		// BLUR_PASSES times to approximate a wider, softer falloff cheaply.
+		// Not a real gaussian, just enough to kill the "flat gradient" look.
+		std::vector<uint8_t> vScratch(static_cast<size_t>(Width) * Height * 4);
+		for(int Pass = 0; Pass < BLUR_PASSES; Pass++)
 		{
-			for(int x = 0; x < Width; x++)
+			for(int y = 0; y < Height; y++)
 			{
-				int Sum[4] = {0, 0, 0, 0};
-				for(int dx = -1; dx <= 1; dx++)
+				for(int x = 0; x < Width; x++)
 				{
-					const int sx = std::clamp(x + dx, 0, Width - 1);
-					const uint8_t *pPixel = &pData[(static_cast<size_t>(y) * Width + sx) * 4];
+					int Sum[4] = {0, 0, 0, 0};
+					for(int dx = -1; dx <= 1; dx++)
+					{
+						const int sx = std::clamp(x + dx, 0, Width - 1);
+						const uint8_t *pPixel = &pData[(static_cast<size_t>(y) * Width + sx) * 4];
+						for(int c = 0; c < 4; c++)
+							Sum[c] += pPixel[c];
+					}
+					uint8_t *pOut = &vScratch[(static_cast<size_t>(y) * Width + x) * 4];
 					for(int c = 0; c < 4; c++)
-						Sum[c] += pPixel[c];
+						pOut[c] = static_cast<uint8_t>(Sum[c] / 3);
 				}
-				uint8_t *pOut = &vScratch[(static_cast<size_t>(y) * Width + x) * 4];
-				for(int c = 0; c < 4; c++)
-					pOut[c] = static_cast<uint8_t>(Sum[c] / 3);
 			}
-		}
-		mem_copy(pData, vScratch.data(), vScratch.size());
+			mem_copy(pData, vScratch.data(), vScratch.size());
 
-		for(int y = 0; y < Height; y++)
-		{
-			for(int x = 0; x < Width; x++)
+			for(int y = 0; y < Height; y++)
 			{
-				int Sum[4] = {0, 0, 0, 0};
-				for(int dy = -1; dy <= 1; dy++)
+				for(int x = 0; x < Width; x++)
 				{
-					const int sy = std::clamp(y + dy, 0, Height - 1);
-					const uint8_t *pPixel = &pData[(static_cast<size_t>(sy) * Width + x) * 4];
+					int Sum[4] = {0, 0, 0, 0};
+					for(int dy = -1; dy <= 1; dy++)
+					{
+						const int sy = std::clamp(y + dy, 0, Height - 1);
+						const uint8_t *pPixel = &pData[(static_cast<size_t>(sy) * Width + x) * 4];
+						for(int c = 0; c < 4; c++)
+							Sum[c] += pPixel[c];
+					}
+					uint8_t *pOut = &vScratch[(static_cast<size_t>(y) * Width + x) * 4];
 					for(int c = 0; c < 4; c++)
-						Sum[c] += pPixel[c];
+						pOut[c] = static_cast<uint8_t>(Sum[c] / 3);
 				}
-				uint8_t *pOut = &vScratch[(static_cast<size_t>(y) * Width + x) * 4];
-				for(int c = 0; c < 4; c++)
-					pOut[c] = static_cast<uint8_t>(Sum[c] / 3);
 			}
+			mem_copy(pData, vScratch.data(), vScratch.size());
 		}
-		mem_copy(pData, vScratch.data(), vScratch.size());
 	}
-}
 }
 
 CGlassBackdrop::CBlurJob::CBlurJob(CImageInfo &&SourceImage) :
