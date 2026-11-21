@@ -3061,18 +3061,39 @@ if(CLIENT)
   if(TARGET_OS STREQUAL "ios")
     # Liquudnet addition (Task #12): a real WidgetKit app-extension target,
     # providing the Dynamic Island/Lock Screen UI for a Live Activity (see
-    # src/ios/activity/). This is a first pass, proof of concept only: it
-    # builds and embeds a working, self-contained Widget Extension into the
-    # app bundle, with a placeholder status string. Deliberately NOT yet
-    # wired up: starting/updating/ending the Live Activity from the C++
-    # engine (ios_main.mm) requires a separate Swift bridge library linked
-    # into game-client, since ActivityKit has no Objective-C surface at
-    # all - that's a cross-target Swift<->Objective-C++ header-import step
-    # with its own real risk of getting wrong, so it's being done and
-    # verified as its own follow-up rather than bundled blind into this
-    # same first push.
+    # src/ios/activity/), plus the Swift bridge (LiquudnetActivity, below)
+    # that lets the C++ engine (ios_main.mm) actually start/update/end
+    # that Live Activity. ActivityKit has no Objective-C surface at all,
+    # which is why a Swift bridge is unavoidable even though the rest of
+    # the engine is C++/Objective-C++.
     enable_language(Swift)
     set(CMAKE_Swift_LANGUAGE_VERSION 5.0)
+
+    # Follow-up to the Widget Extension below: the actual Swift bridge the
+    # C++ engine (ios_main.mm) calls into to start/update/end the Live
+    # Activity. Kept as its own Swift-only target rather than adding these
+    # .swift files directly to game-client, because mixing Swift and C++
+    # in the SAME target under CMake's Xcode generator is a known rough
+    # edge; a separate Swift-only static library linked into game-client
+    # is instead the long-standing, well-supported "Swift library imported
+    # into an Objective-C app target via its generated -Swift.h header"
+    # pattern. game-client imports "LiquudnetActivity-Swift.h" (see
+    # ios_main.mm) - the header name Xcode generates from this target's
+    # PRODUCT_MODULE_NAME below.
+    add_library(LiquudnetActivity STATIC
+      src/ios/activity/LiquudnetActivityAttributes.swift
+      src/ios/activity/LiquudnetActivityBridge.swift
+    )
+    set_target_properties(LiquudnetActivity PROPERTIES
+      XCODE_ATTRIBUTE_PRODUCT_MODULE_NAME "LiquudnetActivity"
+      XCODE_ATTRIBUTE_SWIFT_VERSION "5.0"
+      # Deliberately NOT bumped to 16.1 like the widget extension: this
+      # library is linked straight into game-client, which keeps the main
+      # app's own lower deployment target (see IOS_DEPLOYMENT_TARGET).
+      # LiquudnetActivityBridge.swift guards all its actual ActivityKit
+      # usage behind `if #available(iOS 16.1, *)` internally instead.
+    )
+    target_link_libraries(game-client PRIVATE LiquudnetActivity)
 
     set(IOS_WIDGET_INFO_PLIST "${PROJECT_BINARY_DIR}/ios-widget-Info.plist")
     configure_file("${PROJECT_SOURCE_DIR}/scripts/ios/files/WidgetInfo.plist.in" "${IOS_WIDGET_INFO_PLIST}")

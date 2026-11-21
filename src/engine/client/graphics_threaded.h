@@ -711,6 +711,10 @@ public:
 	// implemented on iOS, a no-op on all other platforms.
 	virtual void SetNativeGlassButton(bool Visible, float X, float Y, float Width, float Height, const char *pLabel) = 0;
 	virtual bool ConsumeNativeGlassButtonTap() = 0;
+	// See IGraphics::SetLiveActivityActive/IsLiveActivityRunning. Only
+	// implemented on iOS, a no-op on all other platforms.
+	virtual void SetLiveActivityActive(bool Active, const char *pStatusText) = 0;
+	virtual bool IsLiveActivityRunning() = 0;
 	virtual void NotifyWindow() = 0;
 	virtual bool IsScreenKeyboardShown() = 0;
 
@@ -1258,6 +1262,9 @@ public:
 
 	void SetNativeGlassButton(bool Visible, float X, float Y, float Width, float Height, const char *pLabel) override { m_pBackend->SetNativeGlassButton(Visible, X, Y, Width, Height, pLabel); }
 	bool ConsumeNativeGlassButtonTap() override { return m_pBackend->ConsumeNativeGlassButtonTap(); }
+
+	void SetLiveActivityActive(bool Active, const char *pStatusText) override { m_pBackend->SetLiveActivityActive(Active, pStatusText); }
+	bool IsLiveActivityRunning() override { return m_pBackend->IsLiveActivityRunning(); }
 
 	bool GetDriverVersion(EGraphicsDriverAgeType DriverAgeType, int &Major, int &Minor, int &Patch, const char *&pName, EBackendType BackendType) override { return m_pBackend->GetDriverVersion(DriverAgeType, Major, Minor, Patch, pName, BackendType); }
 	bool IsConfigModernAPI() override { return m_pBackend->IsConfigModernAPI(); }

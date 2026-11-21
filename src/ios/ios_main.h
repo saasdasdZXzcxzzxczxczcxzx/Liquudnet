@@ -84,4 +84,36 @@ void IosSetGlassButtonFrame(SDL_Window *pWindow, bool Visible, float X, float Y,
  */
 bool IosConsumeGlassButtonTap();
 
+/**
+ * Starts or updates the Dynamic Island / Lock Screen Live Activity (see
+ * src/ios/activity/), or ends it.
+ *
+ * @ingroup iOS
+ *
+ * Like the Live Activity itself, this is a proof of concept: it drives a
+ * single activity with one plain status string, via the Swift
+ * `LiquudnetActivityBridge` class (ActivityKit has no Objective-C or C++
+ * surface at all, so a Swift bridge is unavoidable).
+ *
+ * Safe to call every frame, similar to IosSetGlassButtonFrame: passing
+ * Active=true starts the activity on first call and just updates its
+ * status text on later calls, and Active=false ends it (a no-op if it
+ * isn't running). Also safe to call on iOS versions below 16.1 or when
+ * Live Activities are disabled system-wide: the bridge silently no-ops.
+ *
+ * @param Active Whether the Live Activity should currently be running.
+ * @param pStatusText UTF-8 status text to show on the Live Activity.
+ */
+void IosSetLiveActivityActive(bool Active, const char *pStatusText);
+
+/**
+ * Reports whether the Dynamic Island / Lock Screen Live Activity (see
+ * IosSetLiveActivityActive) is currently running.
+ *
+ * @ingroup iOS
+ *
+ * @return `true` if the Live Activity is currently running, `false` otherwise.
+ */
+bool IosIsLiveActivityRunning();
+
 #endif // IOS_IOS_MAIN_H

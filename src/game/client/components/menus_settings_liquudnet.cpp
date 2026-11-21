@@ -105,4 +105,33 @@ void CMenus::RenderSettingsLiquudnet(CUIRect MainView)
 	char aTapLabel[32];
 	str_format(aTapLabel, sizeof(aTapLabel), Localize("Tapped: %d"), s_GlassButtonTapCount);
 	Ui()->DoLabel(&Label, aTapLabel, 14.0f, TEXTALIGN_ML);
+
+	// --- Dynamic Island / Live Activity experiment ------------------------
+	// A single toggleable Live Activity (see src/ios/activity/,
+	// IGraphics::SetLiveActivityActive), proof of concept only: the status
+	// text is currently a fixed placeholder, not wired up to real in-game
+	// state (e.g. the player's current score/position) yet - that's a
+	// separate follow-up.
+	MainView.HSplitTop(20.0f, nullptr, &MainView);
+	MainView.HSplitTop(24.0f, &Label, &MainView);
+	Ui()->DoLabel(&Label, Localize("Dynamic Island (experimental)"), 16.0f, TEXTALIGN_ML);
+
+	MainView.HSplitTop(6.0f, nullptr, &MainView);
+	MainView.HSplitTop(34.0f, &Label, &MainView);
+	Ui()->DoLabel(&Label, Localize("iOS 16.1+ only. Starts a Live Activity shown in the Dynamic Island and on the Lock Screen, with a placeholder status for now."), 12.0f, TEXTALIGN_TL);
+
+	MainView.HSplitTop(10.0f, nullptr, &MainView);
+	MainView.HSplitTop(40.0f, &Button, &MainView);
+	Button.VSplitLeft(280.0f, &Button, nullptr);
+
+	static CButtonContainer s_LiveActivityToggleId;
+#if defined(CONF_PLATFORM_IOS)
+	const bool LiveActivityRunning = Graphics()->IsLiveActivityRunning();
+	if(DoButton_Menu(&s_LiveActivityToggleId, LiveActivityRunning ? Localize("Stop Dynamic Island") : Localize("Start Dynamic Island"), 0, &Button))
+	{
+		Graphics()->SetLiveActivityActive(!LiveActivityRunning, "Playing Liquudnet");
+	}
+#else
+	DoButton_Menu(&s_LiveActivityToggleId, Localize("Dynamic Island (iOS only)"), 0, &Button);
+#endif
 }

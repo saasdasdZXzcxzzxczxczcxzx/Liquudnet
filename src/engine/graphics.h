@@ -697,6 +697,30 @@ public:
 	 */
 	virtual bool ConsumeNativeGlassButtonTap() = 0;
 
+	/**
+	 * Starts or updates the Dynamic Island / Lock Screen Live Activity, or
+	 * ends it.
+	 *
+	 * Only implemented on iOS (16.1+; a no-op on older versions, and when
+	 * Live Activities are disabled system-wide); a no-op everywhere else.
+	 *
+	 * Safe to call every frame: passing Active=true starts the activity on
+	 * first call and just updates its status text afterwards, and
+	 * Active=false ends it (a no-op if it isn't running).
+	 *
+	 * @param Active Whether the Live Activity should currently be running.
+	 * @param pStatusText UTF-8 status text to show on the Live Activity.
+	 */
+	virtual void SetLiveActivityActive(bool Active, const char *pStatusText) = 0;
+
+	/**
+	 * Reports whether the Dynamic Island / Lock Screen Live Activity (see
+	 * SetLiveActivityActive) is currently running.
+	 *
+	 * @return `true` if the Live Activity is currently running, `false` otherwise (including on platforms without one).
+	 */
+	virtual bool IsLiveActivityRunning() = 0;
+
 protected:
 	CTextureHandle CreateTextureHandle(int Index)
 	{

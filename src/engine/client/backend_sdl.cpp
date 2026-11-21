@@ -1630,6 +1630,22 @@ bool CGraphicsBackend_SDL_GL::ConsumeNativeGlassButtonTap()
 #endif
 }
 
+void CGraphicsBackend_SDL_GL::SetLiveActivityActive(bool Active, const char *pStatusText)
+{
+#if defined(CONF_PLATFORM_IOS)
+	IosSetLiveActivityActive(Active, pStatusText);
+#endif
+}
+
+bool CGraphicsBackend_SDL_GL::IsLiveActivityRunning()
+{
+#if defined(CONF_PLATFORM_IOS)
+	return IosIsLiveActivityRunning();
+#else
+	return false;
+#endif
+}
+
 void CGraphicsBackend_SDL_GL::NotifyWindow()
 {
 	// Minimum version 2.0.16, after version 2.0.22 the naming is changed to 2.24.0 etc.
