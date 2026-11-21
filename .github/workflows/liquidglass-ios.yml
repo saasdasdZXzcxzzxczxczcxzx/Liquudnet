@@ -1,0 +1,63 @@
+name: Liquid Glass iOS preview
+
+# Scoped to the liquidglass branch only, separate from upstream's own build.yml.
+# Builds the real iOS simulator app via the official scripts/ios/cmake_ios.sh
+# pipeline (same one DDNet's own CI uses), boots it, lets it render the main
+# menu, and uploads a real screenshot — not a mockup — so changes to the UI
+# skin can be reviewed visually.
+
+on:
+  push:
+    branches: [liquidglass]
+  workflow_dispatch:
+
+jobs:
+  preview:
+    runs-on: macos-26
+    env:
+      CARGO_HTTP_MULTIPLEXING: false
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Select Xcode and add Rust iOS targets
+        run: |
+          sudo xcode-select -s "/Applications/Xcode_26.2.app/Contents/Developer"
+          xcodebuild -version
+          rustup target add aarch64-apple-ios-sim
+
+      - name: Cache Rust dependencies
+        uses: Swatinem/rust-cache@v2.9.2
+        with:
+          workspaces: ./
+
+      - name: Build iOS simulator app (debug)
+        run: scripts/ios/cmake_ios.sh sim-arm64 DDNet org.ddnet.client Debug build-ios-sim
+
+      - name: Boot simulator and launch app
+        run: |
+          UDID=$(xcrun simctl list devices available -j | python3 -c 'import json,sys; print(next(device["udid"] for devices in json.load(sys.stdin)["devices"].values() for device in devices if "iPhone 14" in device["name"]))' || \
+                 xcrun simctl list devices available -j | python3 -c 'import json,sys; print(next(device["udid"] for devices in json.load(sys.stdin)["devices"].values() for device in devices if "iPhone" in device["name"]))')
+          echo "UDID=$UDID" >> "$GITHUB_ENV"
+          xcrun simctl bootstatus "$UDID" -b
+          xcrun simctl install "$UDID" build-ios-sim/Debug-iphonesimulator/DDNet.app
+          xcrun simctl launch "$UDID" org.ddnet.client
+
+      - name: Wait for menu to render, then screenshot
+        run: |
+          mkdir -p artifacts
+          sleep 8
+          xcrun simctl io "$UDID" screenshot artifacts/main_menu.png
+          # Give it a moment then try to reach the server browser tab via a second screenshot
+          sleep 2
+          xcrun simctl io "$UDID" screenshot artifacts/main_menu_2.png
+
+      - name: Terminate app
+        if: always()
+        run: xcrun simctl terminate "$UDID" org.ddnet.client || true
+
+      - name: Upload screenshots
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: liquidglass-screenshots
+          path: artifacts

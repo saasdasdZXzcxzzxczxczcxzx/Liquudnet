@@ -4,6 +4,8 @@
 
 #include <engine/graphics.h>
 
+#include <algorithm>
+
 IGraphics *CUIRect::ms_pGraphics = nullptr;
 
 void CUIRect::HSplitMid(CUIRect *pTop, CUIRect *pBottom, float Spacing) const
@@ -166,14 +168,57 @@ bool CUIRect::Inside(vec2 Point) const
 	return Point.x >= x && Point.x < x + w && Point.y >= y && Point.y < y + h;
 }
 
+// Liquid Glass fill: a flat color panel becomes a subtle vertical glass gradient
+// (brighter, slightly desaturated sheen at the top edge; a touch darker at the
+// bottom) plus a thin specular highlight line along the top edge. This is purely
+// a visual change to the shared fill primitive used by nearly every panel/button
+// in the UI; it does not touch game logic, networking, or input handling.
+static ColorRGBA GlassTopTint(ColorRGBA Color)
+{
+	const float Mix = 0.22f;
+	ColorRGBA Out(
+		Color.r + (1.0f - Color.r) * Mix,
+		Color.g + (1.0f - Color.g) * Mix,
+		Color.b + (1.0f - Color.b) * Mix,
+		std::clamp(Color.a * 1.12f, 0.0f, 1.0f));
+	return Out;
+}
+
+static ColorRGBA GlassBottomTint(ColorRGBA Color)
+{
+	const float Mix = 0.10f;
+	return ColorRGBA(
+		Color.r * (1.0f - Mix),
+		Color.g * (1.0f - Mix),
+		Color.b * (1.0f - Mix),
+		Color.a);
+}
+
 void CUIRect::Draw(ColorRGBA Color, int Corners, float Rounding) const
 {
-	ms_pGraphics->DrawRect(x, y, w, h, Color, Corners, Rounding);
+	Draw4(GlassTopTint(Color), GlassTopTint(Color), GlassBottomTint(Color), GlassBottomTint(Color), Corners, Rounding);
 }
 
 void CUIRect::Draw4(ColorRGBA ColorTopLeft, ColorRGBA ColorTopRight, ColorRGBA ColorBottomLeft, ColorRGBA ColorBottomRight, int Corners, float Rounding) const
 {
 	ms_pGraphics->DrawRect4(x, y, w, h, ColorTopLeft, ColorTopRight, ColorBottomLeft, ColorBottomRight, Corners, Rounding);
+
+	// Specular highlight: a thin brighter line just inside the top edge, the
+	// classic "light catching the rim of the glass" cue. Skipped for rects too
+	// thin to show it (separators, scrollbar thumbs, etc.) or fully transparent
+	// rects (invisible hitboxes), so it never adds a visible seam where none was
+	// intended and never costs a draw call for invisible elements.
+	const float MaxSourceAlpha = std::max({ColorTopLeft.a, ColorTopRight.a, ColorBottomLeft.a, ColorBottomRight.a});
+	if(MaxSourceAlpha > 0.02f && h >= 6.0f && w >= 6.0f)
+	{
+		const float Inset = std::min(Rounding * 0.5f + 1.0f, h * 0.25f);
+		const IGraphics::CLineItem HighlightLine(x + Inset, y + Inset, x + w - Inset, y + Inset);
+		ms_pGraphics->TextureClear();
+		ms_pGraphics->LinesBegin();
+		ms_pGraphics->SetColor(1.0f, 1.0f, 1.0f, std::min(0.22f, MaxSourceAlpha * 0.3f));
+		ms_pGraphics->LinesDraw(&HighlightLine, 1);
+		ms_pGraphics->LinesEnd();
+	}
 }
 
 void CUIRect::DrawOutline(ColorRGBA Color) const

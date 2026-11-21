@@ -2433,9 +2433,12 @@ void CMenus::UpdateColors()
 {
 	ms_GuiColor = color_cast<ColorRGBA>(ColorHSLA(g_Config.m_UiColor, true));
 
-	ms_ColorTabbarInactiveOutgame = ColorRGBA(0.0f, 0.0f, 0.0f, 0.25f);
-	ms_ColorTabbarActiveOutgame = ColorRGBA(0.0f, 0.0f, 0.0f, 0.5f);
-	ms_ColorTabbarHoverOutgame = ColorRGBA(1.0f, 1.0f, 1.0f, 0.25f);
+	// Liquid Glass tab bar: lighter, more translucent base tints than the old flat
+	// dark overlays, so the gradient+highlight added in CUIRect::Draw reads as
+	// frosted glass rather than a plain dark box.
+	ms_ColorTabbarInactiveOutgame = ColorRGBA(1.0f, 1.0f, 1.0f, 0.08f);
+	ms_ColorTabbarActiveOutgame = ColorRGBA(1.0f, 1.0f, 1.0f, 0.22f);
+	ms_ColorTabbarHoverOutgame = ColorRGBA(1.0f, 1.0f, 1.0f, 0.32f);
 
 	const float ColorIngameScaleI = 0.5f;
 	const float ColorIngameScaleA = 0.2f;
