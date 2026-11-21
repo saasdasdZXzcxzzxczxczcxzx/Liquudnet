@@ -3128,25 +3128,20 @@ if(CLIENT)
     # LiquudnetWidgetExtension.appex actually ends up inside the main app's
     # bundle rather than just sitting next to it unused.
     #
-    # XCODE_ATTRIBUTE_SWIFT_VERSION "" is also deliberate here, not an
-    # oversight: linking the Swift LiquudnetActivity library makes Xcode's
-    # build system treat game-client itself as Swift-enabled too (it
-    # otherwise inherits SWIFT_VERSION from the project-wide default that
-    # enable_language(Swift) sets up), which triggers a spurious
-    # "SwiftDriver game-client" step with zero actual .swift sources, just
-    # to emit an unused Liquudnet-Swift.h. That step blindly reused
-    # game-client's C/C++-only OUR_FLAGS (e.g. -fstack-protector-strong)
-    # as Swift compiler arguments, which swiftc's driver rejects outright
-    # ("Driver threw unknown argument: '-fstack-protector-strong'"),
-    # failing the whole build. Explicitly clearing SWIFT_VERSION back to
-    # empty on game-client itself (overriding the inherited project
-    # default) stops Xcode from treating it as a Swift target at all -
-    # game-client only ever needs LiquudnetActivity's generated
-    # Objective-C header (see ios_main.mm), never to compile Swift itself.
+    # Linking the Swift LiquudnetActivity library makes Xcode's build
+    # system treat game-client itself as nominally Swift-enabled too (it
+    # inherits SWIFT_VERSION from the project-wide default that
+    # enable_language(Swift) sets up), running a "SwiftDriver game-client"
+    # step with zero actual .swift sources just to emit an unused
+    # Liquudnet-Swift.h. That's harmless by itself (Xcode requires a valid
+    # SWIFT_VERSION value here - trying to clear it to "" is rejected:
+    # "SWIFT_VERSION '' is unsupported") as long as game-client's own
+    # C/C++-only compiler flags (OUR_FLAGS, below) aren't also applied to
+    # that phantom Swift compile unit, which is handled separately via a
+    # COMPILE_LANGUAGE generator expression.
     set_target_properties(game-client PROPERTIES
       XCODE_EMBED_APP_EXTENSIONS "LiquudnetWidgetExtension"
       XCODE_EMBED_APP_EXTENSIONS_CODE_SIGN_ON_COPY "YES"
-      XCODE_ATTRIBUTE_SWIFT_VERSION ""
     )
     # XCODE_EMBED_APP_EXTENSIONS only adds the *copy* build phase; it does
     # NOT by itself make Xcode build LiquudnetWidgetExtension when only
@@ -4260,7 +4255,16 @@ foreach(target ${TARGETS})
     target_link_libraries(${target} ${OUR_FLAGS_LINK})
   endif()
   if(OUR_FLAGS)
-    target_compile_options(${target} PRIVATE ${OUR_FLAGS})
+    # Liquudnet note (Task #12): these flags are clang/C++-only (e.g.
+    # -fstack-protector-strong), but under the Xcode generator game-client
+    # is now also nominally a "Swift target" (it links the Swift
+    # LiquudnetActivity library, which makes Xcode run a SwiftDriver step
+    # for it too, even with zero .swift sources - see the comment by
+    # XCODE_ATTRIBUTE_SWIFT_VERSION above). Without the COMPILE_LANGUAGE
+    # filter below, these got applied to that phantom Swift compile unit
+    # as well, and swiftc's driver rejects them outright ("Driver threw
+    # unknown argument: '-fstack-protector-strong'"), failing the build.
+    target_compile_options(${target} PRIVATE $<$<COMPILE_LANGUAGE:C,CXX,OBJC,OBJCXX>:${OUR_FLAGS}>)
   endif()
   if(DEFINE_FORTIFY_SOURCE_3 OR DEFINE_FORTIFY_SOURCE)
     if(MINGW)
@@ -4338,7 +4342,10 @@ foreach(target ${TARGETS_OWN})
     target_compile_definitions(${target} PRIVATE _UNICODE) # C-runtime
   endif()
   if(OUR_FLAGS_OWN)
-    target_compile_options(${target} PRIVATE ${OUR_FLAGS_OWN})
+    # See the matching COMPILE_LANGUAGE comment by OUR_FLAGS above: these
+    # are clang/C++-only warning flags too, and leak into game-client's
+    # phantom Swift compile unit on iOS without this filter.
+    target_compile_options(${target} PRIVATE $<$<COMPILE_LANGUAGE:C,CXX,OBJC,OBJCXX>:${OUR_FLAGS_OWN}>)
   endif()
   target_include_directories(${target} PRIVATE ${PROJECT_BINARY_DIR}/src)
   target_include_directories(${target} PRIVATE src)
