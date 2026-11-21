@@ -2379,17 +2379,15 @@ void CMenus::OnWindowResize()
 
 void CMenus::OnRender()
 {
-	// The native Liquid Glass button (see RenderSettingsLiquudnet and
-	// IGraphics::SetNativeGlassButton) is a real platform view layered on
-	// top of everything the engine draws, so unlike engine-drawn UI it keeps
-	// showing on its own once created - it has to be explicitly hidden here,
-	// every frame, whenever its one settings page isn't the thing on screen
-	// right now (including when the whole menu is closed, which is why this
-	// runs before any of the early returns below). A no-op on non-iOS
-	// platforms (see IGraphicsBackend::SetNativeGlassButton).
-	const bool ShowingGlassButtonPage = IsActive() && m_MenuPage == PAGE_SETTINGS && g_Config.m_UiSettingsPage == SETTINGS_LIQUUDNET;
-	if(!ShowingGlassButtonPage)
-		Graphics()->SetNativeGlassButton(false, 0.0f, 0.0f, 0.0f, 0.0f, "");
+	// The native Liquid Glass buttons (see RenderSettingsLiquudnet,
+	// RenderStartMenu and IGraphics::SetNativeGlassButton) are real platform
+	// views layered on top of everything the engine draws, so unlike
+	// engine-drawn UI they keep showing on their own once created. Hide every
+	// id here, every frame, before any of the early returns below; the code
+	// that wants a given id visible re-enables it later in this same frame.
+	// A no-op on non-iOS platforms (see IGraphicsBackend::SetNativeGlassButton).
+	for(int Id = 0; Id < IOS_MAX_GLASS_BUTTONS; ++Id)
+		Graphics()->SetNativeGlassButton(Id, false, 0.0f, 0.0f, 0.0f, 0.0f, "");
 
 	if(Client()->State() != IClient::STATE_ONLINE && Client()->State() != IClient::STATE_DEMOPLAYBACK)
 		SetActive(true);

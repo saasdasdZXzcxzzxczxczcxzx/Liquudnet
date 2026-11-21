@@ -848,17 +848,40 @@ void CTouchControls::OnRender()
 
 bool CTouchControls::LoadConfigurationFromFile(int StorageType)
 {
-	void *pFileData;
-	unsigned FileLength;
+	void *pFileData = nullptr;
+	unsigned FileLength = 0;
 	if(!Storage()->ReadFile(CONFIGURATION_FILENAME, StorageType, &pFileData, &FileLength))
 	{
 		log_error("touch_controls", "Failed to read configuration from '%s'", CONFIGURATION_FILENAME);
 		return false;
 	}
 
-	const bool Result = ParseConfiguration(pFileData, FileLength);
+	if(ParseConfiguration(pFileData, FileLength))
+	{
+		free(pFileData);
+		return true;
+	}
 	free(pFileData);
-	return Result;
+	pFileData = nullptr;
+
+	// Liquudnet: a stale/broken copy in the writable user directory used to be
+	// picked up first by TYPE_ALL and leave the mobile controls completely
+	// empty. If that happened, retry with the pristine copy shipped in the
+	// app bundle (DATADIR), which is always a valid default configuration.
+	if(StorageType == IStorage::TYPE_ALL)
+	{
+		FileLength = 0;
+		if(Storage()->ReadFile(CONFIGURATION_FILENAME, IStorage::TYPE_DATA, &pFileData, &FileLength))
+		{
+			log_warn("touch_controls", "User configuration was invalid, falling back to bundled '%s'", CONFIGURATION_FILENAME);
+			const bool BundledResult = ParseConfiguration(pFileData, FileLength);
+			free(pFileData);
+			return BundledResult;
+		}
+		log_error("touch_controls", "Failed to read bundled fallback configuration from '%s'", CONFIGURATION_FILENAME);
+	}
+
+	return false;
 }
 
 bool CTouchControls::LoadConfigurationFromClipboard()

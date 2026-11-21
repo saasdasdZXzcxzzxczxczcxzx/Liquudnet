@@ -77,19 +77,17 @@ void CMenus::RenderSettingsLiquudnet(CUIRect MainView)
 
 #if defined(CONF_PLATFORM_IOS)
 	// Convert the reserved CUIRect, in UI units (0..Ui()->Screen()->w/h),
-	// into the pixel coordinates the native overlay needs. Known rough edge:
-	// this does not yet account for the display-cutout viewport offset (see
-	// CGraphics_Threaded::AdjustViewport), so in landscape orientations with
-	// a cutout on one side, the native button can sit slightly off from
-	// where an engine-drawn button at the same CUIRect would land.
+	// into the pixel coordinates the native overlay needs. On iOS Liquudnet
+	// renders edge-to-edge (IosDisplayCutoutInsets returns zero), so no extra
+	// cutout offset has to be applied here.
 	const CUIRect *pUiScreen = Ui()->Screen();
 	const float ScaleX = Graphics()->ScreenWidth() / pUiScreen->w;
 	const float ScaleY = Graphics()->ScreenHeight() / pUiScreen->h;
 
 	char aLabel[64];
 	str_format(aLabel, sizeof(aLabel), "Glass Button (%d)", s_GlassButtonTapCount);
-	Graphics()->SetNativeGlassButton(true, Button.x * ScaleX, Button.y * ScaleY, Button.w * ScaleX, Button.h * ScaleY, aLabel);
-	if(Graphics()->ConsumeNativeGlassButtonTap())
+	Graphics()->SetNativeGlassButton(0, true, Button.x * ScaleX, Button.y * ScaleY, Button.w * ScaleX, Button.h * ScaleY, aLabel);
+	if(Graphics()->ConsumeNativeGlassButtonTap(0))
 	{
 		s_GlassButtonTapCount++;
 	}
