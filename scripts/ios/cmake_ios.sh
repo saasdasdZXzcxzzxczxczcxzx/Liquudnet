@@ -106,6 +106,11 @@ else
 	CODE_SIGN_ARGS+=("-DCMAKE_XCODE_ATTRIBUTE_CODE_SIGN_IDENTITY=")
 fi
 
+# INFORM_UPDATE is off below: this fork tracks a different release cadence
+# than upstream DDNet, so comparing against DDNet's published version and
+# showing "a new version is available" would be misleading. The underlying
+# DDNet-info metadata fetch (map categories, etc.) is untouched by this and
+# keeps working.
 cmake \
 	-S . \
 	-B "${BUILD_FOLDER}" \
@@ -123,6 +128,7 @@ cmake \
 	-DTOOLS=OFF \
 	-DVULKAN=OFF \
 	-DVIDEORECORDER=OFF \
+	-DINFORM_UPDATE=OFF \
 	"${CODE_SIGN_ARGS[@]}"
 
 cmake --build "${BUILD_FOLDER}" --config "${BUILD_TYPE}" --target game-client -- "${BUILD_TOOL_ARGS[@]}"
