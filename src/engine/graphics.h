@@ -685,6 +685,14 @@ public:
 
 	virtual int WindowActive() = 0;
 	virtual int WindowOpen() = 0;
+
+	// Synchronous readback of the just-rendered frame. Used by the Liquid
+	// Glass backdrop blur (see CGlassBackdrop) to grab a real copy of the
+	// menu scene to blur, rather than faking the effect. Already existed as
+	// a non-virtual helper on CGraphics_Threaded (used by tools/map_render);
+	// exposing it here just makes it reachable through the IEngineGraphics
+	// pointer that game/client code actually holds.
+	virtual void ReadFramebuffer(CImageInfo &Image) = 0;
 };
 
 extern IEngineGraphics *CreateEngineGraphicsThreaded();

@@ -53,6 +53,7 @@
 #include "components/mapimages.h"
 #include "components/maplayers.h"
 #include "components/mapsounds.h"
+#include "components/glass_backdrop.h"
 #include "components/menu_background.h"
 #include "components/menus.h"
 #include "components/motd.h"
@@ -191,6 +192,7 @@ public:
 	CMapLayers m_MapLayersForeground = CMapLayers{ERenderType::RENDERTYPE_FOREGROUND};
 	CBackground m_Background;
 	CMenuBackground m_MenuBackground;
+	CGlassBackdrop m_GlassBackdrop;
 
 	CMapSounds m_MapSounds;
 
