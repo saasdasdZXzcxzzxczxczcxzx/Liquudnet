@@ -1109,6 +1109,11 @@ void CClient::Restart()
 
 void CClient::Quit()
 {
+	// Liquudnet: the Dynamic Island badge belongs to this process, so end it
+	// here (the explicit Quit path) rather than on background/disconnect.
+#if defined(CONF_PLATFORM_IOS)
+	Graphics()->SetLiveActivityActive(false, "");
+#endif
 	SetState(IClient::STATE_QUITTING);
 }
 
@@ -3365,7 +3370,13 @@ void CClient::Run()
 			if(State() == IClient::STATE_QUITTING)
 				break;
 			else
+			{
+				// Closing the window is a quit too - end the Live Activity.
+#if defined(CONF_PLATFORM_IOS)
+				Graphics()->SetLiveActivityActive(false, "");
+#endif
 				SetState(IClient::STATE_QUITTING); // SDL_QUIT
+			}
 		}
 
 		char aFile[IO_MAX_PATH_LENGTH];

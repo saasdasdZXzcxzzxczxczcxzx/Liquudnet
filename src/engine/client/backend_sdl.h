@@ -265,8 +265,8 @@ public:
 	bool ResizeWindow(int w, int h, int RefreshRate) override;
 	void GetViewportSize(int &w, int &h) override;
 	void GetDisplayCutoutInsets(int &Left, int &Right) override;
-	void SetNativeGlassButton(bool Visible, float X, float Y, float Width, float Height, const char *pLabel) override;
-	bool ConsumeNativeGlassButtonTap() override;
+	void SetNativeGlassButton(int Id, bool Visible, float X, float Y, float Width, float Height, const char *pLabel) override;
+	bool ConsumeNativeGlassButtonTap(int Id) override;
 	void SetLiveActivityActive(bool Active, const char *pStatusText) override;
 	bool IsLiveActivityRunning() override;
 	void NotifyWindow() override;

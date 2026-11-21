@@ -1614,18 +1614,27 @@ void CGraphicsBackend_SDL_GL::GetDisplayCutoutInsets(int &Left, int &Right)
 #endif
 }
 
-void CGraphicsBackend_SDL_GL::SetNativeGlassButton(bool Visible, float X, float Y, float Width, float Height, const char *pLabel)
+void CGraphicsBackend_SDL_GL::SetNativeGlassButton(int Id, bool Visible, float X, float Y, float Width, float Height, const char *pLabel)
 {
 #if defined(CONF_PLATFORM_IOS)
-	IosSetGlassButtonFrame(m_pWindow, Visible, X, Y, Width, Height, pLabel);
+	IosSetGlassButtonFrame(m_pWindow, Id, Visible, X, Y, Width, Height, pLabel);
+#else
+	(void)Id;
+	(void)Visible;
+	(void)X;
+	(void)Y;
+	(void)Width;
+	(void)Height;
+	(void)pLabel;
 #endif
 }
 
-bool CGraphicsBackend_SDL_GL::ConsumeNativeGlassButtonTap()
+bool CGraphicsBackend_SDL_GL::ConsumeNativeGlassButtonTap(int Id)
 {
 #if defined(CONF_PLATFORM_IOS)
-	return IosConsumeGlassButtonTap();
+	return IosConsumeGlassButtonTap(Id);
 #else
+	(void)Id;
 	return false;
 #endif
 }

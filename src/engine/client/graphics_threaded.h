@@ -709,8 +709,8 @@ public:
 	virtual void GetDisplayCutoutInsets(int &Left, int &Right) = 0;
 	// See IGraphics::SetNativeGlassButton/ConsumeNativeGlassButtonTap. Only
 	// implemented on iOS, a no-op on all other platforms.
-	virtual void SetNativeGlassButton(bool Visible, float X, float Y, float Width, float Height, const char *pLabel) = 0;
-	virtual bool ConsumeNativeGlassButtonTap() = 0;
+	virtual void SetNativeGlassButton(int Id, bool Visible, float X, float Y, float Width, float Height, const char *pLabel) = 0;
+	virtual bool ConsumeNativeGlassButtonTap(int Id) = 0;
 	// See IGraphics::SetLiveActivityActive/IsLiveActivityRunning. Only
 	// implemented on iOS, a no-op on all other platforms.
 	virtual void SetLiveActivityActive(bool Active, const char *pStatusText) = 0;
@@ -1260,8 +1260,8 @@ public:
 
 	bool IsBackendInitialized() override;
 
-	void SetNativeGlassButton(bool Visible, float X, float Y, float Width, float Height, const char *pLabel) override { m_pBackend->SetNativeGlassButton(Visible, X, Y, Width, Height, pLabel); }
-	bool ConsumeNativeGlassButtonTap() override { return m_pBackend->ConsumeNativeGlassButtonTap(); }
+	void SetNativeGlassButton(int Id, bool Visible, float X, float Y, float Width, float Height, const char *pLabel) override { m_pBackend->SetNativeGlassButton(Id, Visible, X, Y, Width, Height, pLabel); }
+	bool ConsumeNativeGlassButtonTap(int Id) override { return m_pBackend->ConsumeNativeGlassButtonTap(Id); }
 
 	void SetLiveActivityActive(bool Active, const char *pStatusText) override { m_pBackend->SetLiveActivityActive(Active, pStatusText); }
 	bool IsLiveActivityRunning() override { return m_pBackend->IsLiveActivityRunning(); }
