@@ -54,8 +54,7 @@ void CMenusStart::RenderStartMenu(CUIRect MainView)
 	const CUIRect *pUiScreen = Ui()->Screen();
 	const float GlassScaleX = Graphics()->ScreenWidth() / pUiScreen->w;
 	const float GlassScaleY = Graphics()->ScreenHeight() / pUiScreen->h;
-	auto DoGlassButton = [&](int Id, const CUIRect &Rect, const char *pLabel) -> bool
-	{
+	auto DoGlassButton = [&](int Id, const CUIRect &Rect, const char *pLabel) -> bool {
 		Graphics()->SetNativeGlassButton(Id, true, Rect.x * GlassScaleX, Rect.y * GlassScaleY, Rect.w * GlassScaleX, Rect.h * GlassScaleY, pLabel);
 		return Graphics()->ConsumeNativeGlassButtonTap(Id);
 	};
