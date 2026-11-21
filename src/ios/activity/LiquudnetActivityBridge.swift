@@ -1,5 +1,6 @@
 import ActivityKit
 import Foundation
+import UIKit
 
 // Objective-C++ entry point for starting/updating/ending the Liquudnet
 // Dynamic Island / Lock Screen Live Activity from the game engine (see
@@ -35,7 +36,9 @@ public class LiquudnetActivityBridge: NSObject {
         if #available(iOS 16.2, *) {
             guard activity == nil else { return }
             guard ActivityAuthorizationInfo().areActivitiesEnabled else { return }
-            let state = LiquudnetActivityAttributes.ContentState(status: status)
+            let state = LiquudnetActivityAttributes.ContentState(
+                status: status,
+                iconPng: Self.appIconPngData())
             let content = ActivityContent(state: state, staleDate: nil, relevanceScore: 0.0)
             do {
                 activity = try Activity<LiquudnetActivityAttributes>.request(
@@ -59,7 +62,9 @@ public class LiquudnetActivityBridge: NSObject {
     @objc public static func update(withStatus status: String) {
         if #available(iOS 16.2, *) {
             guard let typedActivity = activity as? Activity<LiquudnetActivityAttributes> else { return }
-            let state = LiquudnetActivityAttributes.ContentState(status: status)
+            let state = LiquudnetActivityAttributes.ContentState(
+                status: status,
+                iconPng: Self.appIconPngData())
             let content = ActivityContent(state: state, staleDate: nil, relevanceScore: 0.0)
             Task {
                 await typedActivity.update(content)
@@ -68,15 +73,24 @@ public class LiquudnetActivityBridge: NSObject {
     }
 
     /// Ends the running Live Activity immediately. No-op if none is
-    /// running.
+    /// running. Also ends activities of this type that were started by a
+    /// previous process (e.g. one that was killed instead of quitting
+    /// cleanly), so a quit always clears the Dynamic Island.
     @objc public static func end() {
         if #available(iOS 16.2, *) {
-            guard let typedActivity = activity as? Activity<LiquudnetActivityAttributes> else { return }
             activity = nil
             Task {
-                await typedActivity.end(nil, dismissalPolicy: .immediate)
+                for Current in Activity<LiquudnetActivityAttributes>.activities {
+                    await Current.end(nil, dismissalPolicy: .immediate)
+                }
             }
         }
+    }
+
+    private static func appIconPngData() -> Data {
+        // UIKit is available here (main app process); the widget extension
+        // only receives the resulting bytes in ContentState.
+        UIApplication.shared.applicationIconImage?.pngData() ?? Data()
     }
 
     @objc public static var isRunning: Bool {

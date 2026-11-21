@@ -1,5 +1,6 @@
 import ActivityKit
 import SwiftUI
+import UIKit
 import WidgetKit
 
 // The Dynamic Island / Lock Screen presentation for
@@ -9,16 +10,14 @@ import WidgetKit
 // same reason the native Liquid Glass button needs a real UIKit view (see
 // IGraphics::SetNativeGlassButton) rather than anything the engine draws.
 //
-// First pass only: a plain status line in every presentation, not yet a
-// real race-timer/HUD-style layout. The point of this pass is to prove the
-// Widget Extension target itself - building, embedding into the app
-// bundle, Info.plist wiring - works before investing in real layout work
-// or wiring it up to actual game state from the C++ engine (next step,
-// not done yet).
+// The leading/minimal badge is the app icon: the bridge captures its PNG
+// bytes on the app side into ContentState.iconPng, so the widget extension
+// does not need its own copy of the app-icon asset catalog.
 struct LiquudnetLiveActivityWidget: Widget {
     var body: some WidgetConfiguration {
         ActivityConfiguration(for: LiquudnetActivityAttributes.self) { context in
             HStack {
+                LiquudnetIcon(data: context.state.iconPng)
                 Text("Liquudnet")
                     .font(.headline)
                 Spacer()
@@ -27,16 +26,41 @@ struct LiquudnetLiveActivityWidget: Widget {
             .padding()
         } dynamicIsland: { context in
             DynamicIsland {
+                DynamicIslandExpandedRegion(.leading) {
+                    LiquudnetIcon(data: context.state.iconPng)
+                }
                 DynamicIslandExpandedRegion(.center) {
                     Text(context.state.status)
                 }
             } compactLeading: {
-                Text("L")
+                LiquudnetIcon(data: context.state.iconPng)
             } compactTrailing: {
                 Text(context.state.status.prefix(3))
             } minimal: {
-                Text("L")
+                LiquudnetIcon(data: context.state.iconPng)
             }
         }
+    }
+}
+
+private struct LiquudnetIcon: View {
+    let data: Data
+
+    var body: some View {
+        Group {
+            if !data.isEmpty, let uiImage = UIImage(data: data) {
+                Image(uiImage: uiImage)
+                    .resizable()
+                    .scaledToFit()
+            } else {
+                // Fallback if the bridge couldn't capture the icon.
+                Image(systemName: "gamecontroller.fill")
+                    .resizable()
+                    .scaledToFit()
+                    .foregroundStyle(.white)
+            }
+        }
+        .frame(width: 18, height: 18)
+        .clipShape(RoundedRectangle(cornerRadius: 4, style: .continuous))
     }
 }

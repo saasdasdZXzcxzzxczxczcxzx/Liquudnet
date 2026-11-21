@@ -15,5 +15,11 @@ import ActivityKit
 struct LiquudnetActivityAttributes: ActivityAttributes {
     public struct ContentState: Codable, Hashable {
         var status: String
+        // PNG bytes of the app icon, captured on the app side by
+        // LiquudnetActivityBridge (UIApplication.shared.applicationIconImage)
+        // and rendered by the widget as the Dynamic Island badge. Kept as
+        // raw Data rather than an asset name so the widget extension does
+        // not need its own copy of the app-icon asset catalog.
+        var iconPng: Data
     }
 }
