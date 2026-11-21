@@ -1,4 +1,5 @@
 import ActivityKit
+import Foundation
 
 // Shared between the main app and LiquudnetWidgetExtension (see
 // CMakeLists.txt: this file is listed as a source of both targets).
