@@ -3042,6 +3042,11 @@ if(CLIENT)
     configure_file("${PROJECT_SOURCE_DIR}/scripts/ios/files/Info.plist.in" "${IOS_INFO_PLIST}")
     target_sources(game-client PRIVATE "${PROJECT_SOURCE_DIR}/scripts/ios/files/Assets.xcassets")
     set_source_files_properties("${PROJECT_SOURCE_DIR}/scripts/ios/files/Assets.xcassets" PROPERTIES MACOSX_PACKAGE_LOCATION Resources)
+    # Liquudnet: the DDNet icon is also shipped as a plain PNG resource so the
+    # Live Activity bridge can put the real app icon into ContentState.iconPng
+    # (UIKit has no public API to read an appiconset back as an image).
+    target_sources(game-client PRIVATE "${PROJECT_SOURCE_DIR}/other/icons/DDNet_256x256x32.png")
+    set_source_files_properties("${PROJECT_SOURCE_DIR}/other/icons/DDNet_256x256x32.png" PROPERTIES MACOSX_PACKAGE_LOCATION Resources)
     set_target_properties(game-client PROPERTIES
       MACOSX_BUNDLE_INFO_PLIST "${IOS_INFO_PLIST}"
       MACOSX_BUNDLE_GUI_IDENTIFIER "${IOS_BUNDLE_IDENTIFIER}"
