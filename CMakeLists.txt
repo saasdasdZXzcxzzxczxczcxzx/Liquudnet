@@ -3093,7 +3093,11 @@ if(CLIENT)
       # LiquudnetActivityBridge.swift guards all its actual ActivityKit
       # usage behind `if #available(iOS 16.1, *)` internally instead.
     )
-    target_link_libraries(game-client PRIVATE LiquudnetActivity)
+    # Plain (non-keyword) signature deliberately: game-client already uses
+    # the plain target_link_libraries(game-client ${LIBS_CLIENT}) above,
+    # and CMake forbids mixing the plain and keyword (PRIVATE/PUBLIC/...)
+    # signatures for the same target.
+    target_link_libraries(game-client LiquudnetActivity)
 
     set(IOS_WIDGET_INFO_PLIST "${PROJECT_BINARY_DIR}/ios-widget-Info.plist")
     configure_file("${PROJECT_SOURCE_DIR}/scripts/ios/files/WidgetInfo.plist.in" "${IOS_WIDGET_INFO_PLIST}")
