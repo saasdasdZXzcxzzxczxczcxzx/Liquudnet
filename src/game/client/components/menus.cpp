@@ -38,6 +38,10 @@
 #include <game/client/ui_listbox.h>
 #include <game/localization.h>
 
+#if defined(CONF_PLATFORM_IOS)
+#include <ios/ios_main.h>
+#endif
+
 #include <algorithm>
 #include <chrono>
 #include <cmath>
@@ -2386,7 +2390,12 @@ void CMenus::OnRender()
 	// id here, every frame, before any of the early returns below; the code
 	// that wants a given id visible re-enables it later in this same frame.
 	// A no-op on non-iOS platforms (see IGraphicsBackend::SetNativeGlassButton).
-	for(int Id = 0; Id < IOS_MAX_GLASS_BUTTONS; ++Id)
+#if defined(CONF_PLATFORM_IOS)
+	constexpr int NumGlassButtons = IOS_MAX_GLASS_BUTTONS;
+#else
+	constexpr int NumGlassButtons = 0;
+#endif
+	for(int Id = 0; Id < NumGlassButtons; ++Id)
 		Graphics()->SetNativeGlassButton(Id, false, 0.0f, 0.0f, 0.0f, 0.0f, "");
 
 	if(Client()->State() != IClient::STATE_ONLINE && Client()->State() != IClient::STATE_DEMOPLAYBACK)
