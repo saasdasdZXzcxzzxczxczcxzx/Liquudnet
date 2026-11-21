@@ -1171,6 +1171,29 @@ int CUi::DoButton_Menu(CUIElement &UIElement, const CButtonContainer *pId, const
 		Index = 1;
 	Graphics()->TextureClear();
 	Graphics()->RenderQuadContainer(UIElement.Rect(Index)->m_UIRectQuadContainer, -1);
+
+	// Liquid Glass: same specular top-edge highlight as CUIRect::Draw, added here
+	// too because menu buttons bake their fill into a quad container (built once,
+	// re-rendered every frame) rather than going through CUIRect::Draw per frame.
+	{
+		ColorRGBA HighlightSource = Props.m_Color;
+		if(Index == 0)
+			HighlightSource.a *= ButtonColorMulActive();
+		else if(Index == 1)
+			HighlightSource.a *= ButtonColorMulHot();
+		else
+			HighlightSource.a *= ButtonColorMulDefault();
+		if(HighlightSource.a > 0.02f && pRect->h >= 6.0f && pRect->w >= 6.0f)
+		{
+			const float Inset = std::min(Props.m_Rounding * 0.5f + 1.0f, pRect->h * 0.25f);
+			const IGraphics::CLineItem HighlightLine(pRect->x + Inset, pRect->y + Inset, pRect->x + pRect->w - Inset, pRect->y + Inset);
+			Graphics()->LinesBegin();
+			Graphics()->SetColor(1.0f, 1.0f, 1.0f, std::min(0.22f, HighlightSource.a * 0.3f));
+			Graphics()->LinesDraw(&HighlightLine, 1);
+			Graphics()->LinesEnd();
+		}
+	}
+
 	if(Props.m_ShowDropDownIcon)
 	{
 		TextRender()->SetFontPreset(EFontPreset::ICON_FONT);
