@@ -3127,9 +3127,26 @@ if(CLIENT)
     # Adds the real "Embed App Extensions" build phase, so the built
     # LiquudnetWidgetExtension.appex actually ends up inside the main app's
     # bundle rather than just sitting next to it unused.
+    #
+    # XCODE_ATTRIBUTE_SWIFT_VERSION "" is also deliberate here, not an
+    # oversight: linking the Swift LiquudnetActivity library makes Xcode's
+    # build system treat game-client itself as Swift-enabled too (it
+    # otherwise inherits SWIFT_VERSION from the project-wide default that
+    # enable_language(Swift) sets up), which triggers a spurious
+    # "SwiftDriver game-client" step with zero actual .swift sources, just
+    # to emit an unused Liquudnet-Swift.h. That step blindly reused
+    # game-client's C/C++-only OUR_FLAGS (e.g. -fstack-protector-strong)
+    # as Swift compiler arguments, which swiftc's driver rejects outright
+    # ("Driver threw unknown argument: '-fstack-protector-strong'"),
+    # failing the whole build. Explicitly clearing SWIFT_VERSION back to
+    # empty on game-client itself (overriding the inherited project
+    # default) stops Xcode from treating it as a Swift target at all -
+    # game-client only ever needs LiquudnetActivity's generated
+    # Objective-C header (see ios_main.mm), never to compile Swift itself.
     set_target_properties(game-client PROPERTIES
       XCODE_EMBED_APP_EXTENSIONS "LiquudnetWidgetExtension"
       XCODE_EMBED_APP_EXTENSIONS_CODE_SIGN_ON_COPY "YES"
+      XCODE_ATTRIBUTE_SWIFT_VERSION ""
     )
     # XCODE_EMBED_APP_EXTENSIONS only adds the *copy* build phase; it does
     # NOT by itself make Xcode build LiquudnetWidgetExtension when only
