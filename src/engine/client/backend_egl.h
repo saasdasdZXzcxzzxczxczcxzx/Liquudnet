@@ -135,6 +135,8 @@ public:
 		Left = 0;
 		Right = 0;
 	}
+	void SetNativeGlassButton(bool Visible, float X, float Y, float Width, float Height, const char *pLabel) override {}
+	bool ConsumeNativeGlassButtonTap() override { return false; }
 	void NotifyWindow() override {}
 	bool IsScreenKeyboardShown() override { return false; }
 	void WindowDestroyNtf(uint32_t WindowId) override {}

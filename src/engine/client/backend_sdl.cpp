@@ -1614,6 +1614,22 @@ void CGraphicsBackend_SDL_GL::GetDisplayCutoutInsets(int &Left, int &Right)
 #endif
 }
 
+void CGraphicsBackend_SDL_GL::SetNativeGlassButton(bool Visible, float X, float Y, float Width, float Height, const char *pLabel)
+{
+#if defined(CONF_PLATFORM_IOS)
+	IosSetGlassButtonFrame(m_pWindow, Visible, X, Y, Width, Height, pLabel);
+#endif
+}
+
+bool CGraphicsBackend_SDL_GL::ConsumeNativeGlassButtonTap()
+{
+#if defined(CONF_PLATFORM_IOS)
+	return IosConsumeGlassButtonTap();
+#else
+	return false;
+#endif
+}
+
 void CGraphicsBackend_SDL_GL::NotifyWindow()
 {
 	// Minimum version 2.0.16, after version 2.0.22 the naming is changed to 2.24.0 etc.

@@ -43,4 +43,45 @@ void IosDisplayCutoutInsets(SDL_Window *pWindow, int *pLeft, int *pRight);
  */
 const char *InitIos();
 
+/**
+ * Shows, hides or repositions a single native UIKit "Liquid Glass" button
+ * overlaid on top of the game's drawable area.
+ *
+ * @ingroup iOS
+ *
+ * This is a proof of concept for using the real system Liquid Glass
+ * material (`UIGlassEffect` on iOS 26+, falling back to a regular
+ * `UIBlurEffect` on older versions) instead of the engine's own hand-rolled
+ * approximation (see CUIRect::SetGlassBackdrop / CGlassBackdrop): since the
+ * game's own UI is drawn entirely by the engine into one OpenGL surface
+ * rather than as real UIKit views, this only works for UI elements that are
+ * willing to be actual native views layered on top of that surface - which
+ * this function provides exactly one of. It is not a general mechanism for
+ * arbitrary engine UI.
+ *
+ * Safe to call every frame: it lazily creates the button on first use and
+ * just updates its frame/label/visibility afterwards, so the engine can
+ * simply stop calling it with Visible=false (or stop calling it at all)
+ * once the relevant menu page is no longer shown.
+ *
+ * @param pWindow The window to attach the button to.
+ * @param Visible Whether the button should currently be shown.
+ * @param X Left edge of the button, in pixels, relative to the window's drawable area.
+ * @param Y Top edge of the button, in pixels, relative to the window's drawable area.
+ * @param Width Width of the button, in pixels.
+ * @param Height Height of the button, in pixels.
+ * @param pLabel UTF-8 label text to show on the button.
+ */
+void IosSetGlassButtonFrame(SDL_Window *pWindow, bool Visible, float X, float Y, float Width, float Height, const char *pLabel);
+
+/**
+ * Reports and clears whether the native Liquid Glass button (see
+ * IosSetGlassButtonFrame) has been tapped since the last call.
+ *
+ * @ingroup iOS
+ *
+ * @return `true` if the button was tapped since the last call to this function, `false` otherwise.
+ */
+bool IosConsumeGlassButtonTap();
+
 #endif // IOS_IOS_MAIN_H

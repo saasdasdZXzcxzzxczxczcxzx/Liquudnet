@@ -265,6 +265,8 @@ public:
 	bool ResizeWindow(int w, int h, int RefreshRate) override;
 	void GetViewportSize(int &w, int &h) override;
 	void GetDisplayCutoutInsets(int &Left, int &Right) override;
+	void SetNativeGlassButton(bool Visible, float X, float Y, float Width, float Height, const char *pLabel) override;
+	bool ConsumeNativeGlassButtonTap() override;
 	void NotifyWindow() override;
 	bool IsScreenKeyboardShown() override;
 

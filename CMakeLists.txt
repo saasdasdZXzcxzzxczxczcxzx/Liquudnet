@@ -2726,6 +2726,7 @@ if(CLIENT)
     components/menus_settings_general.cpp
     components/menus_settings_graphics.cpp
     components/menus_settings_language.cpp
+    components/menus_settings_liquudnet.cpp
     components/menus_settings_player.cpp
     components/menus_settings_sound.cpp
     components/menus_settings_tee.cpp

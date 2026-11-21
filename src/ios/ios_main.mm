@@ -9,6 +9,9 @@
 #include <SDL.h>
 #include <SDL_syswm.h>
 
+#import <UIKit/UIKit.h>
+
+#include <atomic>
 #include <cmath>
 
 extern "C" int SDL_UIKitRunApp(int argc, char **argv, int (*mainFunction)(int, char **));
@@ -45,6 +48,84 @@ void IosDisplayCutoutInsets(SDL_Window *pWindow, int *pLeft, int *pRight)
 	{
 		*pRight = std::ceil(Insets.right * Scale);
 	}
+}
+
+// State for the single native Liquid Glass button (see IosSetGlassButtonFrame).
+// Deliberately global/static and never torn down: this is a proof-of-concept
+// single persistent overlay button, not a general mechanism, and the app has
+// no scenario where it needs to be destroyed before process exit. The file
+// is compiled without ARC (no -fobjc-arc flag is set for it), so these are
+// plain unretained pointers; the objects stay alive because the UIKit view
+// hierarchy itself retains them once added via -addSubview:.
+static UIButton *s_pGlassButton = nil;
+static UIView *s_pGlassBackgroundView = nil;
+static std::atomic<bool> s_GlassButtonTapped{false};
+
+void IosSetGlassButtonFrame(SDL_Window *pWindow, bool Visible, float X, float Y, float Width, float Height, const char *pLabel)
+{
+	SDL_SysWMinfo Info;
+	SDL_VERSION(&Info.version);
+	dbg_assert(SDL_GetWindowWMInfo(pWindow, &Info) == SDL_TRUE, "Failed to determine window information: %s", SDL_GetError());
+
+	UIWindow *pUiWindow = Info.info.uikit.window;
+	UIView *pRootView = pUiWindow.rootViewController.view;
+
+	if(s_pGlassButton == nil)
+	{
+		// Real system Liquid Glass material where available (iOS 26+); a
+		// regular system-material blur otherwise, so this still looks
+		// reasonable - just not the new Liquid Glass look - on older
+		// devices/OS versions. This is the first real test of the
+		// `UIGlassEffect` API surface in this project: kept to a minimal,
+		// default-initialized effect (no extra tinting/interactivity
+		// properties) to reduce the chance of guessing a detail wrong: if it
+		// compiles and looks reasonable, it can be refined from there.
+		if(@available(iOS 26.0, *))
+		{
+			UIGlassEffect *pGlassEffect = [[UIGlassEffect alloc] init];
+			s_pGlassBackgroundView = [[UIVisualEffectView alloc] initWithEffect:pGlassEffect];
+		}
+		else
+		{
+			UIBlurEffect *pBlurEffect = [UIBlurEffect effectWithStyle:UIBlurEffectStyleSystemMaterialDark];
+			s_pGlassBackgroundView = [[UIVisualEffectView alloc] initWithEffect:pBlurEffect];
+		}
+		s_pGlassBackgroundView.userInteractionEnabled = NO;
+		s_pGlassBackgroundView.layer.cornerRadius = 14.0;
+		s_pGlassBackgroundView.clipsToBounds = YES;
+
+		s_pGlassButton = [UIButton buttonWithType:UIButtonTypeSystem];
+		[s_pGlassButton setTitleColor:[UIColor whiteColor] forState:UIControlStateNormal];
+		s_pGlassButton.titleLabel.font = [UIFont boldSystemFontOfSize:15.0];
+		// The blur/glass view sits behind the button's own label, filling its bounds.
+		[s_pGlassButton insertSubview:s_pGlassBackgroundView atIndex:0];
+		UIActionHandler Handler = ^(__kindof UIAction *_Nonnull Action) {
+			s_GlassButtonTapped.store(true);
+		};
+		[s_pGlassButton addAction:[UIAction actionWithHandler:Handler] forControlEvents:UIControlEventTouchUpInside];
+
+		[pRootView addSubview:s_pGlassButton];
+	}
+
+	s_pGlassButton.hidden = !Visible;
+	if(!Visible)
+	{
+		return;
+	}
+
+	// SDL positions/sizes are given to us in pixels of the drawable area, but
+	// UIKit frames are in points - same conversion as IosDisplayCutoutInsets.
+	const CGFloat Scale = pRootView.contentScaleFactor;
+	const CGRect Frame = CGRectMake(X / Scale, Y / Scale, Width / Scale, Height / Scale);
+	s_pGlassButton.frame = Frame;
+	s_pGlassBackgroundView.frame = s_pGlassButton.bounds;
+	[s_pGlassButton setTitle:[NSString stringWithUTF8String:pLabel] forState:UIControlStateNormal];
+	[pRootView bringSubviewToFront:s_pGlassButton];
+}
+
+bool IosConsumeGlassButtonTap()
+{
+	return s_GlassButtonTapped.exchange(false);
 }
 
 const char *InitIos()

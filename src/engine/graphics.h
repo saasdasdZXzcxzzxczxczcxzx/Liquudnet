@@ -665,6 +665,38 @@ public:
 
 	virtual bool IsBackendInitialized() = 0;
 
+	/**
+	 * Shows, hides or repositions a single native "Liquid Glass" button
+	 * overlaid on top of the game's own rendering (see ios/ios_main.h).
+	 *
+	 * This exists only as a proof of concept for using the real system
+	 * Liquid Glass material instead of the engine's own approximation (see
+	 * CUIRect::SetGlassBackdrop): the engine's UI is drawn entirely into one
+	 * OpenGL surface rather than as real platform UI, so the system material
+	 * can only be used for UI elements willing to be actual native views
+	 * layered on top of that surface - this provides exactly one such
+	 * element, not a general mechanism.
+	 *
+	 * Only implemented on iOS; a no-op everywhere else (the button is simply
+	 * never shown and taps are never reported).
+	 *
+	 * @param Visible Whether the button should currently be shown.
+	 * @param X Left edge of the button, in pixels, relative to the window's drawable area.
+	 * @param Y Top edge of the button, in pixels, relative to the window's drawable area.
+	 * @param Width Width of the button, in pixels.
+	 * @param Height Height of the button, in pixels.
+	 * @param pLabel UTF-8 label text to show on the button.
+	 */
+	virtual void SetNativeGlassButton(bool Visible, float X, float Y, float Width, float Height, const char *pLabel) = 0;
+
+	/**
+	 * Reports and clears whether the native Liquid Glass button (see
+	 * SetNativeGlassButton) has been tapped since the last call.
+	 *
+	 * @return `true` if the button was tapped since the last call to this function, `false` otherwise (including on platforms without a native button).
+	 */
+	virtual bool ConsumeNativeGlassButtonTap() = 0;
+
 protected:
 	CTextureHandle CreateTextureHandle(int Index)
 	{
