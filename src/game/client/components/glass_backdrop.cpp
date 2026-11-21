@@ -22,7 +22,7 @@ namespace
 	// Small, fixed destination resolution for the blurred backdrop. The blur
 	// itself (an O(Width*Height) box filter run a few times) is the expensive
 	// part, so downsampling to this size first - rather than blurring the full
-	// capture - is what keeps this affordable on a phone every ~250ms.
+	// capture - is what keeps this affordable on a phone every ~1s.
 	constexpr int MAX_BACKDROP_WIDTH = 480;
 	constexpr int MIN_BACKDROP_HEIGHT = 32;
 	constexpr int BLUR_PASSES = 3;
@@ -132,7 +132,14 @@ bool CGlassBackdrop::ShouldCapture() const
 	if(m_pEngineGraphics == nullptr)
 		return false;
 	const int64_t Now = time_get();
-	const int64_t Interval = time_freq() / 4; // ~4 captures/sec
+	// ~1 capture/sec. Started at 4/sec, but each capture forces a GPU
+	// pipeline stall (see IEngineGraphics::ReadFramebuffer / WaitForIdle),
+	// which turned out to be a real, noticeable battery/thermal cost on a
+	// real device when menus were left open for a while - a frosted-glass
+	// background doesn't need to track the live scene that closely, so this
+	// trades a bit of backdrop freshness for being cheap enough to leave
+	// running in the background.
+	const int64_t Interval = time_freq();
 	return m_LastCaptureTime < 0 || Now - m_LastCaptureTime >= Interval;
 }
 
@@ -167,10 +174,23 @@ void CGlassBackdrop::OnRender()
 		m_pPendingJob = nullptr;
 	}
 
-	// Always (re-)apply the latest known backdrop so CUIRect::Draw/Draw4
-	// keep using it; cheap (just a few float/handle assignments).
-	const CUIRect *pScreen = Ui()->Screen();
-	CUIRect::SetGlassBackdrop(m_BackdropTexture, pScreen->w, pScreen->h);
+	// Only let CUIRect panels use the backdrop while a menu is actually on
+	// screen. Captures only ever happen while a menu is active (see
+	// ShouldCapture()), so outside of the menu - in-game HUD, touch controls,
+	// anything else translucent during gameplay - the texture would just be
+	// an increasingly stale freeze-frame of whatever menu screen was last
+	// open, visible as a "ghost" bleeding through live gameplay UI. That is
+	// worse than the plain gradient fallback, so clear it instead.
+	const bool MenuActive = GameClient()->m_Menus.IsActive();
+	if(MenuActive)
+	{
+		const CUIRect *pScreen = Ui()->Screen();
+		CUIRect::SetGlassBackdrop(m_BackdropTexture, pScreen->w, pScreen->h);
+	}
+	else
+	{
+		CUIRect::SetGlassBackdrop(IGraphics::CTextureHandle(), 0.0f, 0.0f);
+	}
 
 	// Kick off a new capture+blur, throttled, so the result is ready to use
 	// a frame or two from now.

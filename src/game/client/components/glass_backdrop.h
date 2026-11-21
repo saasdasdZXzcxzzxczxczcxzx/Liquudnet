@@ -12,15 +12,21 @@
 
 /**
  * Drives the real Liquid Glass backdrop blur (see CUIRect::SetGlassBackdrop):
- * a few times a second, grabs a copy of the just-rendered frame, downsamples
- * and blurs it on a worker thread, and uploads the result as a texture that
- * CUIRect::Draw()/Draw4() paint underneath translucent menu panels so they
- * read as real frosted glass instead of a flat tinted gradient.
+ * roughly once a second while a menu is on screen, grabs a copy of the
+ * just-rendered frame, downsamples and blurs it on a worker thread, and
+ * uploads the result as a texture that CUIRect::Draw()/Draw4() paint
+ * underneath translucent menu panels so they read as real frosted glass
+ * instead of a flat tinted gradient. The backdrop is only ever applied while
+ * a menu is active (see OnRender()) - outside of it (in-game HUD, touch
+ * controls) panels fall back to the plain gradient look, rather than show an
+ * increasingly stale freeze-frame of whatever menu was last open.
  *
  * Deliberately simple: a single CPU box blur done at a small fixed
- * resolution, refreshed a few times a second rather than every frame, to
- * keep the capture call (which stalls the GPU pipeline briefly - see
- * IEngineGraphics::ReadFramebuffer) cheap enough not to threaten 60fps.
+ * resolution, refreshed about once a second rather than every frame, to keep
+ * the capture call (which stalls the GPU pipeline - see
+ * IEngineGraphics::ReadFramebuffer) cheap enough not to threaten 60fps or
+ * cause thermal/battery issues; an earlier, much more frequent (~4/sec) rate
+ * was confirmed to do exactly that on a real device and was dialed back.
  * Known, accepted tradeoffs (see glass_backdrop.cpp and ui_rect.cpp):
  *  - The backdrop texture used while drawing a frame's panels is the frame
  *    captured at the END of the *previous* frame, which already includes
