@@ -13,6 +13,14 @@ concurrency:
 
 jobs:
   build-cmake:
+    # Liquudnet addition: this branch is iOS-only active development, and
+    # these desktop (Linux/Windows/macOS) builds just compete with the
+    # dedicated "Liquid Glass iOS preview" workflow (liquidglass-ios.yml)
+    # for the same limited shared-runner pool, slowing down the one build
+    # that actually matters here. Skipped only for pushes to this branch;
+    # still runs for other branches/PRs/merge_group in case this ever
+    # goes upstream.
+    if: github.ref != 'refs/heads/liquudnet-rebrand'
     runs-on: ${{ matrix.os }}
     env:
       CARGO_HTTP_MULTIPLEXING: false
@@ -331,6 +339,9 @@ jobs:
         path: release/artifacts
 
   build-android:
+    # See the matching comment on build-cmake above: skipped on this
+    # iOS-only branch to keep CI fast there.
+    if: github.ref != 'refs/heads/liquudnet-rebrand'
     runs-on: ubuntu-24.04
     env:
       CARGO_HTTP_MULTIPLEXING: false
@@ -392,6 +403,9 @@ jobs:
         path: artifacts
 
   build-emscripten:
+    # See the matching comment on build-cmake above: skipped on this
+    # iOS-only branch to keep CI fast there.
+    if: github.ref != 'refs/heads/liquudnet-rebrand'
     runs-on: ubuntu-24.04
     env:
       CARGO_HTTP_MULTIPLEXING: false
