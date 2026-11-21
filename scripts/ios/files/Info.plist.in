@@ -66,5 +66,11 @@
 			<integer>1</integer>
 			<integer>2</integer>
 		</array>
+		<!-- Required for the LiquudnetWidgetExtension's Dynamic Island/Lock
+		     Screen Live Activity (see CMakeLists.txt and
+		     src/ios/activity/) to be allowed to start at all. The matching
+		     key is also required on the extension's own Info.plist. -->
+		<key>NSSupportsLiveActivities</key>
+		<true/>
 	</dict>
 </plist>

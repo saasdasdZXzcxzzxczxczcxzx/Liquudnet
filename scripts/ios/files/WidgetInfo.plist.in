@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+	<dict>
+		<key>CFBundleDevelopmentRegion</key>
+		<string>en</string>
+		<key>CFBundleDisplayName</key>
+		<string>${CLIENT_EXECUTABLE} Widget</string>
+		<key>CFBundleExecutable</key>
+		<string>LiquudnetWidgetExtension</string>
+		<key>CFBundleIdentifier</key>
+		<string>${IOS_BUNDLE_IDENTIFIER}.widget</string>
+		<key>CFBundleInfoDictionaryVersion</key>
+		<string>6.0</string>
+		<key>CFBundleName</key>
+		<string>LiquudnetWidgetExtension</string>
+		<key>CFBundlePackageType</key>
+		<string>XPC!</string>
+		<key>CFBundleShortVersionString</key>
+		<string>${PROJECT_VERSION}</string>
+		<key>CFBundleVersion</key>
+		<string>${PROJECT_VERSION}</string>
+		<!-- Marks this bundle as a WidgetKit extension, which is what provides
+		     a Live Activity's actual Dynamic Island/Lock Screen UI (see
+		     LiquudnetLiveActivity.swift). -->
+		<key>NSExtension</key>
+		<dict>
+			<key>NSExtensionPointIdentifier</key>
+			<string>com.apple.widgetkit-extension</string>
+		</dict>
+		<!-- Required on both the main app's and the extension's Info.plist
+		     for Live Activities to be allowed to start at all. -->
+		<key>NSSupportsLiveActivities</key>
+		<true/>
+	</dict>
+</plist>

@@ -3058,6 +3058,56 @@ if(CLIENT)
     )
   endif()
 
+  if(TARGET_OS STREQUAL "ios")
+    # Liquudnet addition (Task #12): a real WidgetKit app-extension target,
+    # providing the Dynamic Island/Lock Screen UI for a Live Activity (see
+    # src/ios/activity/). This is a first pass, proof of concept only: it
+    # builds and embeds a working, self-contained Widget Extension into the
+    # app bundle, with a placeholder status string. Deliberately NOT yet
+    # wired up: starting/updating/ending the Live Activity from the C++
+    # engine (ios_main.mm) requires a separate Swift bridge library linked
+    # into game-client, since ActivityKit has no Objective-C surface at
+    # all - that's a cross-target Swift<->Objective-C++ header-import step
+    # with its own real risk of getting wrong, so it's being done and
+    # verified as its own follow-up rather than bundled blind into this
+    # same first push.
+    enable_language(Swift)
+    set(CMAKE_Swift_LANGUAGE_VERSION 5.0)
+
+    set(IOS_WIDGET_INFO_PLIST "${PROJECT_BINARY_DIR}/ios-widget-Info.plist")
+    configure_file("${PROJECT_SOURCE_DIR}/scripts/ios/files/WidgetInfo.plist.in" "${IOS_WIDGET_INFO_PLIST}")
+
+    add_executable(LiquudnetWidgetExtension MACOSX_BUNDLE
+      src/ios/activity/LiquudnetActivityAttributes.swift
+      src/ios/activity/LiquudnetLiveActivity.swift
+      src/ios/activity/LiquudnetWidgetBundle.swift
+    )
+    set_target_properties(LiquudnetWidgetExtension PROPERTIES
+      OUTPUT_NAME "LiquudnetWidgetExtension"
+      MACOSX_BUNDLE_INFO_PLIST "${IOS_WIDGET_INFO_PLIST}"
+      MACOSX_BUNDLE_GUI_IDENTIFIER "${IOS_BUNDLE_IDENTIFIER}.widget"
+      XCODE_ATTRIBUTE_PRODUCT_BUNDLE_IDENTIFIER "${IOS_BUNDLE_IDENTIFIER}.widget"
+      XCODE_ATTRIBUTE_PRODUCT_MODULE_NAME "LiquudnetWidgetExtension"
+      XCODE_ATTRIBUTE_SWIFT_VERSION "5.0"
+      # ActivityKit/WidgetKit's Dynamic Island APIs require iOS 16.1+; the
+      # main app's own deployment target (see IOS_DEPLOYMENT_TARGET) stays
+      # lower, which is fine - an extension is allowed a higher floor than
+      # the app that embeds it, it just won't be offered on older OS
+      # versions.
+      XCODE_ATTRIBUTE_IPHONEOS_DEPLOYMENT_TARGET "16.1"
+      XCODE_PRODUCT_TYPE "com.apple.product-type.app-extension"
+      XCODE_ATTRIBUTE_SKIP_INSTALL "YES"
+    )
+
+    # Adds the real "Embed App Extensions" build phase, so the built
+    # LiquudnetWidgetExtension.appex actually ends up inside the main app's
+    # bundle rather than just sitting next to it unused.
+    set_target_properties(game-client PROPERTIES
+      XCODE_EMBED_APP_EXTENSIONS "LiquudnetWidgetExtension"
+      XCODE_EMBED_APP_EXTENSIONS_CODE_SIGN_ON_COPY "YES"
+    )
+  endif()
+
   if(MSVC)
     target_link_options(game-client PRIVATE /ENTRY:mainCRTStartup)
   endif()
