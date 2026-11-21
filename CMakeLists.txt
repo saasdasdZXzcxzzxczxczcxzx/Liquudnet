@@ -3127,6 +3127,13 @@ if(CLIENT)
       XCODE_EMBED_APP_EXTENSIONS "LiquudnetWidgetExtension"
       XCODE_EMBED_APP_EXTENSIONS_CODE_SIGN_ON_COPY "YES"
     )
+    # XCODE_EMBED_APP_EXTENSIONS only adds the *copy* build phase; it does
+    # NOT by itself make Xcode build LiquudnetWidgetExtension when only
+    # game-client is requested (e.g. `cmake --build . --target game-client`,
+    # which cmake_ios.sh uses). Without this, the embed phase's "Copy
+    # .../LiquudnetWidgetExtension.appex" step runs before the extension was
+    # ever compiled and fails with "lstat: No such file or directory".
+    add_dependencies(game-client LiquudnetWidgetExtension)
   endif()
 
   if(MSVC)
