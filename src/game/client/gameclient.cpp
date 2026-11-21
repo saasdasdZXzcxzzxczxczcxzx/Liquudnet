@@ -1271,6 +1271,17 @@ void CGameClient::OnStateChange(int NewState, int OldState)
 	if(NewState < IClient::STATE_ONLINE)
 		OnReset();
 
+	// Liquudnet: show the Dynamic Island / Live Activity badge as soon as we
+	// actually enter a game. It is deliberately NOT stopped when the app goes
+	// to the background or the connection drops - only the Quit/app-close path
+	// (CClient::Quit / SDL_QUIT) ends it. This keeps the badge alive while iOS
+	// keeps our process alive, and the bridge also ends stale activities on
+	// the next launch if the process was killed.
+#if defined(CONF_PLATFORM_IOS)
+	if(NewState == IClient::STATE_ONLINE)
+		Graphics()->SetLiveActivityActive(true, "Playing Liquudnet");
+#endif
+
 	// then change the state
 	for(auto &pComponent : m_vpAll)
 		pComponent->OnStateChange(NewState, OldState);
