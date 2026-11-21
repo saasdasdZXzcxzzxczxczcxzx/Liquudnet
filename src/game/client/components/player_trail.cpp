@@ -50,8 +50,15 @@ void CPlayerTrail::UpdateAndRender(int ClientId, vec2 Pos, float Alpha)
 
 	const ColorRGBA BaseColor = color_cast<ColorRGBA>(ColorHSLA(g_Config.m_ClPlayerTrailColor, true));
 
+	// Drawn as a ribbon of quads rather than GL_LINES: thin 1px lines have no
+	// portable way to be made thicker (glLineWidth > 1 isn't reliable across
+	// the GL/GL ES backends this engine targets), so each segment is instead
+	// a small quad, offset perpendicular to the segment direction by half
+	// the configured width on each side.
+	const float HalfWidth = g_Config.m_ClPlayerTrailWidth / 2.0f;
+
 	Graphics()->TextureClear();
-	Graphics()->LinesBegin();
+	Graphics()->QuadsBegin();
 	const size_t NumSegments = vTrail.size() - 1;
 	for(size_t i = 0; i < NumSegments; i++)
 	{
@@ -61,9 +68,22 @@ void CPlayerTrail::UpdateAndRender(int ClientId, vec2 Pos, float Alpha)
 		ColorRGBA SegmentColor = BaseColor;
 		SegmentColor.a *= Age * Alpha;
 
-		const IGraphics::CLineItem Item(vTrail[i].m_Pos, vTrail[i + 1].m_Pos);
+		const vec2 Start = vTrail[i].m_Pos;
+		const vec2 End = vTrail[i + 1].m_Pos;
+		vec2 Dir = End - Start;
+		const float Len = length(Dir);
+		if(Len < 0.0001f)
+			continue;
+		Dir = Dir / Len;
+		const vec2 Normal = vec2(-Dir.y, Dir.x) * HalfWidth;
+
+		const IGraphics::CFreeformItem Freeform(
+			Start.x - Normal.x, Start.y - Normal.y,
+			Start.x + Normal.x, Start.y + Normal.y,
+			End.x - Normal.x, End.y - Normal.y,
+			End.x + Normal.x, End.y + Normal.y);
 		Graphics()->SetColor(SegmentColor);
-		Graphics()->LinesDraw(&Item, 1);
+		Graphics()->QuadsDrawFreeform(&Freeform, 1);
 	}
-	Graphics()->LinesEnd();
+	Graphics()->QuadsEnd();
 }

@@ -26,12 +26,14 @@ void CMenusStart::RenderStartMenu(CUIRect MainView)
 	GameClient()->m_MenuBackground.ChangePosition(CMenuBackground::POS_START);
 
 	// render logo
-	Graphics()->TextureSet(g_pData->m_aImages[IMAGE_BANNER].m_Id);
-	Graphics()->QuadsBegin();
-	Graphics()->SetColor(1, 1, 1, 1);
-	IGraphics::CQuadItem QuadItem(MainView.w / 2 - 170, 60, 360, 103);
-	Graphics()->QuadsDrawTL(&QuadItem, 1);
-	Graphics()->QuadsEnd();
+	// Liquudnet wordmark: the upstream banner image still says "DDNet", so
+	// it's replaced here with a plain text logo rather than drawing that
+	// image at all - no new asset needed, and it matches the rest of the
+	// rebrand (window title, update strings, etc.) already done in text.
+	{
+		CUIRect LogoRect(MainView.w / 2 - 170, 60, 360, 103);
+		Ui()->DoLabel(&LogoRect, "Liquudnet", 48.0f, TEXTALIGN_MC);
+	}
 
 	const float Rounding = 10.0f;
 	const float VMargin = MainView.w / 2 - 190.0f;

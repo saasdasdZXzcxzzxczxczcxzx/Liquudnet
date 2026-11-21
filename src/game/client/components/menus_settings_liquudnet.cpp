@@ -47,6 +47,9 @@ void CMenus::RenderSettingsLiquudnet(CUIRect MainView)
 	{
 		MainView.HSplitTop(20.0f, &Button, &MainView);
 		Ui()->DoScrollbarOption(&g_Config.m_ClPlayerTrailLength, &g_Config.m_ClPlayerTrailLength, &Button, Localize("Trail length"), 2, 60);
+
+		MainView.HSplitTop(20.0f, &Button, &MainView);
+		Ui()->DoScrollbarOption(&g_Config.m_ClPlayerTrailWidth, &g_Config.m_ClPlayerTrailWidth, &Button, Localize("Trail width"), 2, 64);
 	}
 
 	// --- Real iOS Liquid Glass experiment ---------------------------------
