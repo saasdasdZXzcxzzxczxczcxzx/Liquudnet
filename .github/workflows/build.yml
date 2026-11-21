@@ -479,35 +479,35 @@ jobs:
           workspaces: ./
 
     - name: Build iOS simulator app in debug mode
-      run: scripts/ios/cmake_ios.sh sim-arm64 DDNet org.ddnet.client Debug build-ios-sim
+      run: scripts/ios/cmake_ios.sh sim-arm64 Liquudnet com.liquudnet.client Debug build-ios-sim
 
     - name: Smoke test iOS simulator app in debug mode
       timeout-minutes: 15
       run: |
         UDID=$(xcrun simctl list devices available -j | python3 -c 'import json,sys; print(next(device["udid"] for devices in json.load(sys.stdin)["devices"].values() for device in devices if "iPhone" in device["name"]))')
         xcrun simctl bootstatus "$UDID" -b
-        xcrun simctl install "$UDID" build-ios-sim/Debug-iphonesimulator/DDNet.app
-        xcrun simctl launch --console-pty "$UDID" org.ddnet.client quit > simulator-console.log 2>&1
+        xcrun simctl install "$UDID" build-ios-sim/Debug-iphonesimulator/Liquudnet.app
+        xcrun simctl launch --console-pty "$UDID" com.liquudnet.client quit > simulator-console.log 2>&1
         cat simulator-console.log
-        grep -q "config: saved to settings_ddnet.cfg" simulator-console.log
+        grep -q "config: saved to settings_liquudnet.cfg" simulator-console.log
 
     - name: Build iOS device app in release mode
-      run: scripts/ios/cmake_ios.sh device DDNet org.ddnet.client Release build-ios-device
+      run: scripts/ios/cmake_ios.sh device Liquudnet com.liquudnet.client Release build-ios-device
 
     - name: Package
       run: |
         mkdir artifacts
         # Zip the app bundles, as the artifact upload does not keep the executable bit.
         cd build-ios-sim/Debug-iphonesimulator
-        zip -qry ../../artifacts/DDNet-simulator.zip DDNet.app
+        zip -qry ../../artifacts/Liquudnet-simulator.zip Liquudnet.app
         cd ../..
         # The app is unsigned, so it has to be signed before it can be installed.
         mkdir Payload
-        mv build-ios-device/Release-iphoneos/DDNet.app Payload
-        zip -qry artifacts/DDNet.ipa Payload
+        mv build-ios-device/Release-iphoneos/Liquudnet.app Payload
+        zip -qry artifacts/Liquudnet.ipa Payload
 
     - name: Upload Artifacts
       uses: actions/upload-artifact@v6
       with:
-        name: ddnet-ios
+        name: liquudnet-ios
         path: artifacts
