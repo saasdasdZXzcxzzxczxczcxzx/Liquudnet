@@ -2,9 +2,11 @@
 /* If you are missing that file, acquire a complete release at teeworlds.com.                */
 #include "menus.h"
 
+#include <base/color.h>
 #include <base/str.h>
 
 #include <engine/graphics.h>
+#include <engine/shared/config.h>
 #include <engine/textrender.h>
 
 #include <game/client/gameclient.h>
@@ -26,6 +28,26 @@ void CMenus::RenderSettingsLiquudnet(CUIRect MainView)
 	MainView.HSplitTop(10.0f, nullptr, &MainView);
 	MainView.HSplitTop(40.0f, &Label, &MainView);
 	Ui()->DoLabel(&Label, Localize("Settings specific to this client. The original client's own settings stay on the \"DDNet\" tab."), 14.0f, TEXTALIGN_TL);
+
+	// --- Player trails ------------------------------------------------------
+	// Purely cosmetic fading trail behind player tees (see
+	// game/client/components/player_trail.h). Enable checkbox is folded into
+	// the color-picker line itself, same pattern as e.g. the "Friend message"
+	// color option in menus_settings_appearance.cpp.
+	MainView.HSplitTop(20.0f, nullptr, &MainView);
+	MainView.HSplitTop(24.0f, &Label, &MainView);
+	Ui()->DoLabel(&Label, Localize("Player trails"), 16.0f, TEXTALIGN_ML);
+
+	static CButtonContainer s_TrailColorReset;
+	MainView.HSplitTop(6.0f, nullptr, &MainView);
+	DoLine_ColorPicker(&s_TrailColorReset, 20.0f, 13.0f, 5.0f, &MainView, Localize("Show player trails"), &g_Config.m_ClPlayerTrailColor,
+		color_cast<ColorRGBA>(ColorHSLA(DefaultConfig::ClPlayerTrailColor, true)), true, &g_Config.m_ClPlayerTrail, true);
+
+	if(g_Config.m_ClPlayerTrail)
+	{
+		MainView.HSplitTop(20.0f, &Button, &MainView);
+		Ui()->DoScrollbarOption(&g_Config.m_ClPlayerTrailLength, &g_Config.m_ClPlayerTrailLength, &Button, Localize("Trail length"), 2, 60);
+	}
 
 	// --- Real iOS Liquid Glass experiment ---------------------------------
 	// A single native UIKit button (see ios/ios_main.mm,

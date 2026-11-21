@@ -804,3 +804,8 @@ MACRO_CONFIG_INT(ClVideoRecorderFPS, cl_video_recorder_fps, 60, 1, 1000, CFGFLAG
 /*
  * Add config variables for mods below this comment to avoid merge conflicts.
  */
+
+// Liquudnet
+MACRO_CONFIG_INT(ClPlayerTrail, cl_player_trail, 0, 0, 1, CFGFLAG_CLIENT | CFGFLAG_SAVE, "Show a fading trail behind player tees as they move")
+MACRO_CONFIG_COL(ClPlayerTrailColor, cl_player_trail_color, 2576141452, CFGFLAG_CLIENT | CFGFLAG_SAVE | CFGFLAG_COLALPHA, "Player movement trail color")
+MACRO_CONFIG_INT(ClPlayerTrailLength, cl_player_trail_length, 20, 2, 60, CFGFLAG_CLIENT | CFGFLAG_SAVE, "Number of past positions kept in the player movement trail")

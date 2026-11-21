@@ -863,6 +863,12 @@ void CPlayers::RenderPlayer(
 		RenderTools()->RenderTee(&State, &RenderInfo, Player.m_Emote, Direction, ShadowPosition, g_Config.m_ClUnpredictedShadowAlpha / 100.f); // render ghost
 	}
 
+	// Liquudnet addition: fading movement trail, drawn behind the tee so it
+	// sits underneath it. Real players only (ClientId >= 0): not ghosts (-2)
+	// or other synthetic render calls.
+	if(ClientId >= 0)
+		GameClient()->m_PlayerTrail.UpdateAndRender(ClientId, Position, Alpha);
+
 	RenderTools()->RenderTee(&State, &RenderInfo, Player.m_Emote, Direction, Position, Alpha);
 
 	float TeeAnimScale, TeeBaseSize;

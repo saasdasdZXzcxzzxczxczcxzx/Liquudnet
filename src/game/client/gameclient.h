@@ -60,6 +60,7 @@
 #include "components/multiview.h"
 #include "components/nameplates.h"
 #include "components/particles.h"
+#include "components/player_trail.h"
 #include "components/players.h"
 #include "components/race_demo.h"
 #include "components/scoreboard.h"
@@ -183,6 +184,7 @@ public:
 	CMultiView m_MultiView;
 
 	CPlayers m_Players;
+	CPlayerTrail m_PlayerTrail;
 	CNamePlates m_NamePlates;
 	CFreezeBars m_FreezeBars;
 	CItems m_Items;

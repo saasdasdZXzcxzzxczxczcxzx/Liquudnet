@@ -143,6 +143,7 @@ void CGameClient::OnConsoleInit()
 					      &m_Items,
 					      &m_Ghost,
 					      &m_Players,
+					      &m_PlayerTrail, // no-op OnRender(): drawn from inside CPlayers::RenderPlayer() instead, this is just here for OnReset()
 					      &m_MapLayersForeground,
 					      &m_Particles.m_RenderExplosions,
 					      &m_NamePlates,
