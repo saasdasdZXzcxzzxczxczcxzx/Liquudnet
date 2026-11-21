@@ -733,6 +733,17 @@ void CHud::RenderAmmoHealthAndArmor(const CNetObj_Character *pCharacter)
 	bool IsSixupGameSkin = GameClient()->m_GameSkin.IsSixup();
 	int QuadOffsetSixup = (IsSixupGameSkin ? 10 : 0);
 
+	// Liquudnet: moved from the top-left corner to the bottom-right, CS-style.
+	// The icon quads themselves are still baked (in PrepareAmmoHealthAndArmorQuads)
+	// at a fixed top-left-relative local origin - that's unchanged, so the whole
+	// block is just shifted here via the quad-container draw offset instead of
+	// re-baking. The block is ~120 local units wide and ~36 tall (health row,
+	// armor row below it, ammo row below that), so this reproduces the same
+	// 5-unit margin the original top-left placement used, just measured from
+	// the bottom-right corner instead.
+	const float OffsetX = m_Width - 130.0f;
+	const float OffsetY = m_Height - 46.0f;
+
 	if(GameClient()->m_GameInfo.m_HudAmmo)
 	{
 		// ammo display
@@ -745,20 +756,13 @@ void CHud::RenderAmmoHealthAndArmor(const CNetObj_Character *pCharacter)
 			{
 				const int Max = g_pData->m_Weapons.m_Ninja.m_Duration * Client()->GameTickSpeed() / 1000;
 				float NinjaProgress = std::clamp(pCharacter->m_AmmoCount - Client()->GameTick(g_Config.m_ClDummy), 0, Max) / (float)Max;
-				RenderNinjaBarPos(5 + 10 * 12, 5, 6.f, 24.f, NinjaProgress);
+				RenderNinjaBarPos(OffsetX + 5 + 10 * 12, OffsetY + 5, 6.f, 24.f, NinjaProgress);
 			}
 		}
 		else if(CurWeapon >= 0 && GameClient()->m_GameSkin.m_aSpriteWeaponProjectiles[CurWeapon].IsValid())
 		{
 			Graphics()->TextureSet(GameClient()->m_GameSkin.m_aSpriteWeaponProjectiles[CurWeapon]);
-			if(AmmoOffsetY > 0)
-			{
-				Graphics()->RenderQuadContainerEx(m_HudQuadContainerIndex, m_aAmmoOffset[CurWeapon] + QuadOffsetSixup, std::clamp(pCharacter->m_AmmoCount, 0, 10), 0, AmmoOffsetY);
-			}
-			else
-			{
-				Graphics()->RenderQuadContainer(m_HudQuadContainerIndex, m_aAmmoOffset[CurWeapon] + QuadOffsetSixup, std::clamp(pCharacter->m_AmmoCount, 0, 10));
-			}
+			Graphics()->RenderQuadContainerEx(m_HudQuadContainerIndex, m_aAmmoOffset[CurWeapon] + QuadOffsetSixup, std::clamp(pCharacter->m_AmmoCount, 0, 10), OffsetX, OffsetY + AmmoOffsetY);
 		}
 	}
 
@@ -767,16 +771,16 @@ void CHud::RenderAmmoHealthAndArmor(const CNetObj_Character *pCharacter)
 		// health display
 		const int DisplayHealth = std::min(pCharacter->m_Health, 10);
 		Graphics()->TextureSet(GameClient()->m_GameSkin.m_SpriteHealthFull);
-		Graphics()->RenderQuadContainer(m_HudQuadContainerIndex, m_HealthOffset + QuadOffsetSixup, DisplayHealth);
+		Graphics()->RenderQuadContainerEx(m_HudQuadContainerIndex, m_HealthOffset + QuadOffsetSixup, DisplayHealth, OffsetX, OffsetY);
 		Graphics()->TextureSet(GameClient()->m_GameSkin.m_SpriteHealthEmpty);
-		Graphics()->RenderQuadContainer(m_HudQuadContainerIndex, m_EmptyHealthOffset + QuadOffsetSixup + DisplayHealth, 10 - DisplayHealth);
+		Graphics()->RenderQuadContainerEx(m_HudQuadContainerIndex, m_EmptyHealthOffset + QuadOffsetSixup + DisplayHealth, 10 - DisplayHealth, OffsetX, OffsetY);
 
 		// armor display
 		const int DisplayArmor = std::min(pCharacter->m_Armor, 10);
 		Graphics()->TextureSet(GameClient()->m_GameSkin.m_SpriteArmorFull);
-		Graphics()->RenderQuadContainer(m_HudQuadContainerIndex, m_ArmorOffset + QuadOffsetSixup, DisplayArmor);
+		Graphics()->RenderQuadContainerEx(m_HudQuadContainerIndex, m_ArmorOffset + QuadOffsetSixup, DisplayArmor, OffsetX, OffsetY);
 		Graphics()->TextureSet(GameClient()->m_GameSkin.m_SpriteArmorEmpty);
-		Graphics()->RenderQuadContainer(m_HudQuadContainerIndex, m_ArmorOffset + QuadOffsetSixup + DisplayArmor, 10 - DisplayArmor);
+		Graphics()->RenderQuadContainerEx(m_HudQuadContainerIndex, m_ArmorOffset + QuadOffsetSixup + DisplayArmor, 10 - DisplayArmor, OffsetX, OffsetY);
 	}
 }
 

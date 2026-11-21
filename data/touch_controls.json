@@ -5,11 +5,11 @@
 	"background-color-active": "33333340",
 	"touch-buttons": [
 		{
-			"x": 0,
-			"y": 833333,
-			"w": 200000,
-			"h": 166667,
-			"shape": "rect",
+			"x": 20000,
+			"y": 850000,
+			"w": 160000,
+			"h": 133333,
+			"shape": "circle",
 			"visibilities": [
 				"ingame"
 			],
@@ -21,11 +21,11 @@
 			}
 		},
 		{
-			"x": 200000,
-			"y": 833333,
-			"w": 200000,
-			"h": 166667,
-			"shape": "rect",
+			"x": 220000,
+			"y": 850000,
+			"w": 160000,
+			"h": 133333,
+			"shape": "circle",
 			"visibilities": [
 				"ingame"
 			],
@@ -37,11 +37,11 @@
 			}
 		},
 		{
-			"x": 100000,
-			"y": 666666,
-			"w": 200000,
-			"h": 166667,
-			"shape": "rect",
+			"x": 120000,
+			"y": 683333,
+			"w": 160000,
+			"h": 133333,
+			"shape": "circle",
 			"visibilities": [
 				"ingame"
 			],
@@ -87,7 +87,20 @@
 		{
 			"x": 16667,
 			"y": 16667,
-			"w": 83333,
+			"w": 38333,
+			"h": 83333,
+			"shape": "rect",
+			"visibilities": [
+			],
+			"behavior": {
+				"type": "predefined",
+				"id": "ingame-menu"
+			}
+		},
+		{
+			"x": 60000,
+			"y": 16667,
+			"w": 38333,
 			"h": 83333,
 			"shape": "rect",
 			"visibilities": [
@@ -296,10 +309,10 @@
 			}
 		},
 		{
-			"x": 755000,
-			"y": 580000,
-			"w": 225000,
-			"h": 400000,
+			"x": 715000,
+			"y": 610000,
+			"w": 195000,
+			"h": 340000,
 			"shape": "circle",
 			"visibilities": [
 				"ingame"
