@@ -3084,9 +3084,23 @@ if(CLIENT)
       src/ios/activity/LiquudnetActivityAttributes.swift
       src/ios/activity/LiquudnetActivityBridge.swift
     )
+    # Xcode's default location for the generated "LiquudnetActivity-Swift.h"
+    # interop header is deep inside per-config/per-arch build intermediates
+    # (.../LiquudnetActivity.build/Debug-iphonesimulator/DerivedSources/...),
+    # which isn't on game-client's header search path by default - CMake's
+    # Xcode generator doesn't propagate that automatically just from
+    # target_link_libraries, unlike a normal Xcode project where you'd add
+    # the dependency target's build products folder manually too. Pinning
+    # DERIVED_FILE_DIR to one fixed, config/arch-independent directory
+    # (rather than relying on the default path above) and adding that same
+    # directory to game-client's own include path below is the standard
+    # fix for this exact "Swift static library consumed by a C++/ObjC++
+    # Xcode target via CMake" situation.
+    set(LIQUUDNET_ACTIVITY_SWIFT_HEADER_DIR "${PROJECT_BINARY_DIR}/liquudnet-activity-swift-header")
     set_target_properties(LiquudnetActivity PROPERTIES
       XCODE_ATTRIBUTE_PRODUCT_MODULE_NAME "LiquudnetActivity"
       XCODE_ATTRIBUTE_SWIFT_VERSION "5.0"
+      XCODE_ATTRIBUTE_DERIVED_FILE_DIR "${LIQUUDNET_ACTIVITY_SWIFT_HEADER_DIR}"
       # Deliberately NOT bumped to 16.1 like the widget extension: this
       # library is linked straight into game-client, which keeps the main
       # app's own lower deployment target (see IOS_DEPLOYMENT_TARGET).
@@ -3098,6 +3112,7 @@ if(CLIENT)
     # and CMake forbids mixing the plain and keyword (PRIVATE/PUBLIC/...)
     # signatures for the same target.
     target_link_libraries(game-client LiquudnetActivity)
+    target_include_directories(game-client PRIVATE "${LIQUUDNET_ACTIVITY_SWIFT_HEADER_DIR}")
 
     set(IOS_WIDGET_INFO_PLIST "${PROJECT_BINARY_DIR}/ios-widget-Info.plist")
     configure_file("${PROJECT_SOURCE_DIR}/scripts/ios/files/WidgetInfo.plist.in" "${IOS_WIDGET_INFO_PLIST}")
