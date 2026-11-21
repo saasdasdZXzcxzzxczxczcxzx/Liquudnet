@@ -5,7 +5,7 @@
 
 #include <base/vmath.h>
 
-#include <generated/protocol.h>
+#include <engine/shared/protocol.h>
 
 #include <game/client/component.h>
 
