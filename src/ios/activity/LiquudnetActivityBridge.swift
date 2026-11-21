@@ -88,9 +88,17 @@ public class LiquudnetActivityBridge: NSObject {
     }
 
     private static func appIconPngData() -> Data {
-        // UIKit is available here (main app process); the widget extension
-        // only receives the resulting bytes in ContentState.
-        UIApplication.shared.applicationIconImage?.pngData() ?? Data()
+        // UIKit has no public API for reading an appiconset back as an image,
+        // so the app bundle also carries the plain DDNet PNG (see
+        // CMakeLists.txt: DDNet_256x256x32.png is copied as a resource).
+        // The widget extension only receives the resulting bytes in
+        // ContentState, so it needs no icon asset of its own.
+        guard let url = Bundle.main.url(forResource: "DDNet_256x256x32", withExtension: "png"),
+              let data = try? Data(contentsOf: url) else
+        {
+            return Data()
+        }
+        return data
     }
 
     @objc public static var isRunning: Bool {
