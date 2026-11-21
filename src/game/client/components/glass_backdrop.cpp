@@ -8,8 +8,6 @@
 #include <engine/engine.h>
 #include <engine/kernel.h>
 
-#include <game/client/components/menus.h>
-#include <game/client/gameclient.h>
 #include <game/client/ui.h>
 #include <game/client/ui_rect.h>
 
@@ -123,10 +121,12 @@ void CGlassBackdrop::CBlurJob::Run()
 
 bool CGlassBackdrop::ShouldCapture() const
 {
-	// Only bother capturing/blurring while a menu is actually visible to show
-	// glass panels; skip entirely in-game to protect gameplay frame time.
-	if(!GameClient()->m_Menus.IsActive())
-		return false;
+	// Captures run both in menus and in-game: in-game touch-control buttons
+	// (movement, jump, hook, ...) are translucent too and are meant to show
+	// a live blurred view of whatever is behind them (the map, chat, other
+	// HUD elements), not just a flat tint. See OnRender() for why that means
+	// the backdrop is always kept live rather than frozen/cleared outside
+	// menus.
 	if(m_pPendingJob)
 		return false; // previous capture is still being downsampled/blurred
 	if(m_pEngineGraphics == nullptr)
@@ -138,7 +138,7 @@ bool CGlassBackdrop::ShouldCapture() const
 	// real device when menus were left open for a while - a frosted-glass
 	// background doesn't need to track the live scene that closely, so this
 	// trades a bit of backdrop freshness for being cheap enough to leave
-	// running in the background.
+	// running continuously, including during actual gameplay.
 	const int64_t Interval = time_freq();
 	return m_LastCaptureTime < 0 || Now - m_LastCaptureTime >= Interval;
 }
@@ -174,23 +174,15 @@ void CGlassBackdrop::OnRender()
 		m_pPendingJob = nullptr;
 	}
 
-	// Only let CUIRect panels use the backdrop while a menu is actually on
-	// screen. Captures only ever happen while a menu is active (see
-	// ShouldCapture()), so outside of the menu - in-game HUD, touch controls,
-	// anything else translucent during gameplay - the texture would just be
-	// an increasingly stale freeze-frame of whatever menu screen was last
-	// open, visible as a "ghost" bleeding through live gameplay UI. That is
-	// worse than the plain gradient fallback, so clear it instead.
-	const bool MenuActive = GameClient()->m_Menus.IsActive();
-	if(MenuActive)
-	{
-		const CUIRect *pScreen = Ui()->Screen();
-		CUIRect::SetGlassBackdrop(m_BackdropTexture, pScreen->w, pScreen->h);
-	}
-	else
-	{
-		CUIRect::SetGlassBackdrop(IGraphics::CTextureHandle(), 0.0f, 0.0f);
-	}
+	// Apply the latest known backdrop everywhere, menu or in-game: captures
+	// keep refreshing continuously (see ShouldCapture()), so there's no
+	// "stale freeze-frame" problem here as long as captures are actually
+	// running - touch-control buttons end up showing a live, roughly
+	// 1-second-old blurred view of the map/chat/HUD behind them, same as
+	// menu panels. An invalid handle (before the first capture completes)
+	// correctly falls back to the plain gradient look in CUIRect::Draw4().
+	const CUIRect *pScreen = Ui()->Screen();
+	CUIRect::SetGlassBackdrop(m_BackdropTexture, pScreen->w, pScreen->h);
 
 	// Kick off a new capture+blur, throttled, so the result is ready to use
 	// a frame or two from now.

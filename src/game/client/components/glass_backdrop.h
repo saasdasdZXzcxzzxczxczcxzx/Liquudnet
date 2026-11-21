@@ -12,26 +12,29 @@
 
 /**
  * Drives the real Liquid Glass backdrop blur (see CUIRect::SetGlassBackdrop):
- * roughly once a second while a menu is on screen, grabs a copy of the
- * just-rendered frame, downsamples and blurs it on a worker thread, and
- * uploads the result as a texture that CUIRect::Draw()/Draw4() paint
- * underneath translucent menu panels so they read as real frosted glass
- * instead of a flat tinted gradient. The backdrop is only ever applied while
- * a menu is active (see OnRender()) - outside of it (in-game HUD, touch
- * controls) panels fall back to the plain gradient look, rather than show an
- * increasingly stale freeze-frame of whatever menu was last open.
+ * roughly once a second, grabs a copy of the just-rendered frame, downsamples
+ * and blurs it on a worker thread, and uploads the result as a texture that
+ * CUIRect::Draw()/Draw4() paint underneath every translucent panel - menu
+ * panels and in-game touch-control buttons alike - so they read as real
+ * frosted glass instead of a flat tinted gradient. Captures run continuously,
+ * in menus and in-game, so a touch-control button genuinely shows a live
+ * (about 1-second-old) blurred view of whatever is behind it - the map,
+ * chat, other HUD elements - not just a static tint.
  *
  * Deliberately simple: a single CPU box blur done at a small fixed
  * resolution, refreshed about once a second rather than every frame, to keep
  * the capture call (which stalls the GPU pipeline - see
  * IEngineGraphics::ReadFramebuffer) cheap enough not to threaten 60fps or
- * cause thermal/battery issues; an earlier, much more frequent (~4/sec) rate
- * was confirmed to do exactly that on a real device and was dialed back.
+ * cause thermal/battery issues; an earlier, much more frequent (~4/sec),
+ * menu-only version was confirmed to run a real device hot and was dialed
+ * back, then widened to also run in-game at the user's request.
  * Known, accepted tradeoffs (see glass_backdrop.cpp and ui_rect.cpp):
  *  - The backdrop texture used while drawing a frame's panels is the frame
- *    captured at the END of the *previous* frame, which already includes
- *    that previous frame's own glass panels ("blur of blur"). Cheap
- *    backdrop-blur techniques commonly accept this; it is not corrected.
+ *    captured roughly a second earlier, so fast on-screen motion (e.g. chat
+ *    scrolling past, the player moving) will visibly lag behind what's
+ *    actually there right now. Raising the capture rate would reduce this
+ *    at a battery/thermal cost - see the interval comment in
+ *    ShouldCapture().
  *  - Rounded panel corners can show a few pixels of the (rectangular)
  *    backdrop texture peeking past the rounded tint silhouette.
  */
