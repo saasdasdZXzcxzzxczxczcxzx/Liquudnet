@@ -135,8 +135,8 @@ public:
 		Left = 0;
 		Right = 0;
 	}
-	void SetNativeGlassButton(bool Visible, float X, float Y, float Width, float Height, const char *pLabel) override {}
-	bool ConsumeNativeGlassButtonTap() override { return false; }
+	void SetNativeGlassButton(int Id, bool Visible, float X, float Y, float Width, float Height, const char *pLabel) override {}
+	bool ConsumeNativeGlassButtonTap(int Id) override { return false; }
 	void SetLiveActivityActive(bool Active, const char *pStatusText) override {}
 	bool IsLiveActivityRunning() override { return false; }
 	void NotifyWindow() override {}
