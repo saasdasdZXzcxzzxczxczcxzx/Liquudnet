@@ -98,6 +98,10 @@ void IosSetGlassButtonFrame(SDL_Window *pWindow, int Id, bool Visible, float X, 
 		pBackground.clipsToBounds = YES;
 
 		UIButton *pNativeButton = [UIButton buttonWithType:UIButtonTypeSystem];
+		// Menu-range buttons are real, tappable views. Touch-control-range
+		// buttons are purely visual: leaving interaction disabled lets the
+		// touches fall through to SDL and the engine's existing touch logic.
+		pNativeButton.userInteractionEnabled = Id < IOS_TOUCH_GLASS_ID_BASE;
 		[pNativeButton setTitleColor:[UIColor whiteColor] forState:UIControlStateNormal];
 		pNativeButton.titleLabel.font = [UIFont boldSystemFontOfSize:15.0];
 		// The blur/glass view sits behind the button's own label, filling its bounds.
@@ -136,6 +140,19 @@ bool IosConsumeGlassButtonTap(int Id)
 	return s_aGlassButtonTaps[Id].m_Tapped.exchange(false);
 }
 
+// Bridge diagnostics (ActivityKit authorization, running activities, last
+// error, widget-extension embedding) into the normal engine log. The Swift
+// side used to swallow every failure, which made "Dynamic Island not
+// starting" impossible to diagnose from a device build.
+static void IosLogActivityDiagnostics(const char *pWhen)
+{
+	@autoreleasepool
+	{
+		NSString *pDiagnostics = [LiquudnetActivityBridge diagnostics];
+		log_info("activity", "%s: %s", pWhen, pDiagnostics != nil ? [pDiagnostics UTF8String] : "nil");
+	}
+}
+
 void IosSetLiveActivityActive(bool Active, const char *pStatusText)
 {
 	if(Active)
@@ -148,11 +165,13 @@ void IosSetLiveActivityActive(bool Active, const char *pStatusText)
 		else
 		{
 			[LiquudnetActivityBridge startWithStatus:pStatus];
+			IosLogActivityDiagnostics("after start");
 		}
 	}
 	else
 	{
 		[LiquudnetActivityBridge end];
+		IosLogActivityDiagnostics("after end");
 	}
 }
 
@@ -205,6 +224,8 @@ const char *InitIos()
 	{
 		return "Missing data directory in app bundle. Ensure data is packaged into the app.";
 	}
+
+	IosLogActivityDiagnostics("startup");
 
 	return nullptr;
 }

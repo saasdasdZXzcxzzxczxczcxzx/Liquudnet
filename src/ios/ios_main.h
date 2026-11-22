@@ -44,7 +44,14 @@ void IosDisplayCutoutInsets(SDL_Window *pWindow, int *pLeft, int *pRight);
 const char *InitIos();
 
 /** Maximum number of simultaneous native Liquid Glass overlay buttons. */
-#define IOS_MAX_GLASS_BUTTONS 16
+// Enough slots for every DoButton_Menu / DoButton_MenuTab drawn on a single
+// menu frame (settings pages are the heaviest). The ids are reused per frame.
+// Menu views use the first range, in-game touch-control overlays the second,
+// so the two render passes never overwrite each other's buttons.
+#define IOS_GLASS_MENU_BUTTONS 32
+#define IOS_TOUCH_GLASS_ID_BASE 32
+#define IOS_TOUCH_GLASS_BUTTONS 32
+#define IOS_MAX_GLASS_BUTTONS (IOS_GLASS_MENU_BUTTONS + IOS_TOUCH_GLASS_BUTTONS)
 
 /**
  * Shows, hides or repositions a native UIKit "Liquid Glass" button
