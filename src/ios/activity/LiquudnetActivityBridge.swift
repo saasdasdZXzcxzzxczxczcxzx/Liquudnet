@@ -45,8 +45,6 @@ public class LiquudnetActivityBridge: NSObject {
             parts.append("storedActivity=\(activity == nil ? "nil" : "set")")
             parts.append("runningActivities=\(Activity<LiquudnetActivityAttributes>.activities.count)")
             parts.append("lastError=\(lastError)")
-            let states = Activity<LiquudnetActivityAttributes>.activities.map { String(describing: $0.state) }
-            parts.append("activityStates=\(describeStates(states))")
         } else {
             parts.append("available=no (needs iOS 16.2+)")
             parts.append("lastError=\(lastError)")
@@ -58,10 +56,6 @@ public class LiquudnetActivityBridge: NSObject {
         let result = parts.joined(separator: ", ")
         log(result)
         return result
-    }
-
-    private static func describeStates(_ values: [String]) -> String {
-        values.isEmpty ? "[]" : values.joined(separator: "/")
     }
 
     /// Starts the Live Activity if one isn't already running. No-op if one
@@ -92,7 +86,7 @@ public class LiquudnetActivityBridge: NSObject {
                     pushType: nil)
                 activity = started
                 lastError = "none"
-                log("start OK, id=\(started.id), state=\(String(describing: started.state))")
+                log("start OK, id=\(started.id)")
             } catch {
                 lastError = "Activity.request failed: \(error.localizedDescription) (domain=\((error as NSError).domain), code=\((error as NSError).code))"
                 activity = nil
@@ -117,13 +111,8 @@ public class LiquudnetActivityBridge: NSObject {
                 iconPng: Self.appIconPngData())
             let content = ActivityContent(state: state, staleDate: nil, relevanceScore: 0.0)
             Task {
-                do {
-                    try await typedActivity.update(content)
-                    log("update OK")
-                } catch {
-                    lastError = "Activity.update failed: \(error.localizedDescription)"
-                    log("update failed: \(lastError)")
-                }
+                await typedActivity.update(content)
+                log("update OK")
             }
         }
     }
