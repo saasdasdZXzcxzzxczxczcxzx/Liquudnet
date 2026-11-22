@@ -136,21 +136,13 @@ bool CMenus::IosGlassButton(const CUIRect *pRect, const char *pText, bool &Tap)
 	const CUIRect *pScreen = Ui()->Screen();
 	const float ScaleX = Graphics()->ScreenWidth() / pScreen->w;
 	const float ScaleY = Graphics()->ScreenHeight() / pScreen->h;
-	SGlassButtonState &State = m_aGlassButtonStates[Id];
-	const float X = pRect->x * ScaleX;
-	const float Y = pRect->y * ScaleY;
-	const float Width = pRect->w * ScaleX;
-	const float Height = pRect->h * ScaleY;
-	const char *pLabel = pText != nullptr ? pText : "";
-	const bool Changed = !State.m_Visible || State.m_X != X || State.m_Y != Y || State.m_Width != Width || State.m_Height != Height || State.m_Label != pLabel;
+	SGlassButtonState &State = m_aGlassButtonDesired[Id];
 	State.m_Visible = true;
-	State.m_X = X;
-	State.m_Y = Y;
-	State.m_Width = Width;
-	State.m_Height = Height;
-	State.m_Label = pLabel;
-	if(Changed)
-		Graphics()->SetNativeGlassButton(Id, true, X, Y, Width, Height, pLabel);
+	State.m_X = pRect->x * ScaleX;
+	State.m_Y = pRect->y * ScaleY;
+	State.m_Width = pRect->w * ScaleX;
+	State.m_Height = pRect->h * ScaleY;
+	State.m_Label = pText != nullptr ? pText : "";
 	Tap = Graphics()->ConsumeNativeGlassButtonTap(Id);
 	return true;
 #else
@@ -679,7 +671,7 @@ void CMenus::RenderMenubar(CUIRect Box, IClient::EClientState ClientState)
 		// so long translations are never clipped and the following tabs are
 		// pushed to the right automatically.
 		const auto TabWidth = [this](const char *pLabel) {
-			return std::max(90.0f, TextRender()->TextWidth(22.0f, pLabel) + 20.0f);
+			return std::max(105.0f, TextRender()->TextWidth(24.0f, pLabel) + 28.0f);
 		};
 
 		const char *pGameLabel = Localize("Game");
@@ -715,10 +707,11 @@ void CMenus::RenderMenubar(CUIRect Box, IClient::EClientState ClientState)
 				NewPage = PAGE_GHOST;
 		}
 
-		Box.VSplitLeft(100.0f, &Button, &Box);
+		const char *pCallVoteLabel = Localize("Call vote");
+		Box.VSplitLeft(TabWidth(pCallVoteLabel), &Button, &Box);
 		Box.VSplitLeft(4.0f, nullptr, &Box);
 		static CButtonContainer s_CallVoteButton;
-		if(DoButton_MenuTab(&s_CallVoteButton, Localize("Call vote"), ActivePage == PAGE_CALLVOTE, &Button, IGraphics::CORNER_TR))
+		if(DoButton_MenuTab(&s_CallVoteButton, pCallVoteLabel, ActivePage == PAGE_CALLVOTE, &Button, IGraphics::CORNER_TR))
 		{
 			NewPage = PAGE_CALLVOTE;
 			m_ControlPageOpening = true;
@@ -1811,7 +1804,7 @@ void CMenus::RenderPopupFullscreen(CUIRect Screen)
 
 		Part.VSplitLeft(30.0f, nullptr, &Part);
 		str_format(aBuf, sizeof(aBuf), "%s\n(%s)",
-			Localize("Show DDNet map finishes in server browser"),
+			Localize("Show Liquudnet map finishes in server browser"),
 			Localize("transmits your player name to info.ddnet.org"));
 
 		if(DoButton_CheckBox(&g_Config.m_BrIndicateFinished, aBuf, g_Config.m_BrIndicateFinished, &Part))
@@ -2448,26 +2441,43 @@ void CMenus::OnWindowResize()
 
 void CMenus::OnRender()
 {
-	// The native Liquid Glass buttons (see RenderSettingsLiquudnet,
-	// RenderStartMenu and IGraphics::SetNativeGlassButton) are real platform
-	// views layered on top of everything the engine draws, so unlike
-	// engine-drawn UI they keep showing on their own once created. Hide every
-	// id here, every frame, before any of the early returns below; the code
-	// that wants a given id visible re-enables it later in this same frame.
-	// A no-op on non-iOS platforms (see IGraphicsBackend::SetNativeGlassButton).
+	// Rebuild the desired native-button state, render the frame, then send only
+	// the differences to UIKit once. The previous version hid and re-showed
+	// every glass button on every frame, which kept the main queue and the GPU
+	// busy and made iOS devices hot very quickly.
 #if defined(CONF_PLATFORM_IOS)
 	for(int Id = 0; Id < GLASS_MENU_BUTTON_COUNT; ++Id)
-	{
-		SGlassButtonState &State = m_aGlassButtonStates[Id];
-		if(!State.m_Visible)
-			continue;
-		State.m_Visible = false;
-		State.m_Label.clear();
-		Graphics()->SetNativeGlassButton(Id, false, 0.0f, 0.0f, 0.0f, 0.0f, "");
-	}
+		m_aGlassButtonDesired[Id] = SGlassButtonState{};
 #endif
 	m_GlassButtonCounter = 0;
 
+	RenderInternal();
+
+#if defined(CONF_PLATFORM_IOS)
+	CommitGlassButtons();
+#endif
+}
+
+void CMenus::CommitGlassButtons()
+{
+#if defined(CONF_PLATFORM_IOS)
+	for(int Id = 0; Id < GLASS_MENU_BUTTON_COUNT; ++Id)
+	{
+		const SGlassButtonState &Desired = m_aGlassButtonDesired[Id];
+		SGlassButtonState &Current = m_aGlassButtonStates[Id];
+		const bool SameState = Desired.m_Visible == Current.m_Visible &&
+				       (!Desired.m_Visible ||
+					       (Desired.m_X == Current.m_X && Desired.m_Y == Current.m_Y && Desired.m_Width == Current.m_Width && Desired.m_Height == Current.m_Height && Desired.m_Label == Current.m_Label));
+		if(SameState)
+			continue;
+		Graphics()->SetNativeGlassButton(Id, Desired.m_Visible, Desired.m_X, Desired.m_Y, Desired.m_Width, Desired.m_Height, Desired.m_Label.c_str());
+		Current = Desired;
+	}
+#endif
+}
+
+void CMenus::RenderInternal()
+{
 	if(Client()->State() != IClient::STATE_ONLINE && Client()->State() != IClient::STATE_DEMOPLAYBACK)
 		SetActive(true);
 

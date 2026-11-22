@@ -134,6 +134,10 @@ public:
 			 */
 			ICON,
 			/**
+			 * Label names one of the generated Lucide sprite icons.
+			 */
+			SPRITE,
+			/**
 			 * Number of label types.
 			 */
 			NUM_TYPES
@@ -175,7 +179,7 @@ private:
 		NUM_ACTIONS
 	};
 
-	static constexpr const char *const LABEL_TYPE_NAMES[(int)CButtonLabel::EType::NUM_TYPES] = {"plain", "localized", "icon"};
+	static constexpr const char *const LABEL_TYPE_NAMES[(int)CButtonLabel::EType::NUM_TYPES] = {"plain", "localized", "icon", "sprite"};
 
 public:
 	class CTouchButtonBehavior;

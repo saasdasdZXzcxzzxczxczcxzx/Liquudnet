@@ -68,6 +68,11 @@ private:
 	// draw order and reset at the start of every CMenus::OnRender().
 	int m_GlassButtonCounter = 0;
 	bool IosGlassButton(const CUIRect *pRect, const char *pText, bool &Tap);
+	// The desired state is rebuilt each frame; the committed state mirrors what
+	// UIKit currently displays. Only the difference is sent to the platform,
+	// which avoids two cross-thread dispatches per button per frame.
+	void CommitGlassButtons();
+	void RenderInternal();
 
 	struct SGlassButtonState
 	{
@@ -84,6 +89,7 @@ private:
 	static constexpr int GLASS_MENU_BUTTON_COUNT = 32;
 #endif
 	SGlassButtonState m_aGlassButtonStates[GLASS_MENU_BUTTON_COUNT];
+	SGlassButtonState m_aGlassButtonDesired[GLASS_MENU_BUTTON_COUNT];
 
 	CUi::SColorPickerPopupContext m_ColorPickerPopupContext;
 	ColorHSLA DoLine_ColorPicker(CButtonContainer *pResetId, float LineSize, float LabelSize, float BottomMargin, CUIRect *pMainRect, const char *pText, unsigned int *pColorValue, ColorRGBA DefaultColor, bool CheckBoxSpacing = true, int *pCheckBoxValue = nullptr, bool Alpha = false);

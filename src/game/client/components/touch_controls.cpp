@@ -15,6 +15,8 @@
 #include <engine/shared/jsonwriter.h>
 #include <engine/shared/localization.h>
 
+#include <generated/client_data.h>
+
 #include <game/client/components/camera.h>
 #include <game/client/components/chat.h>
 #include <game/client/components/console.h>
@@ -50,7 +52,21 @@ static constexpr std::chrono::milliseconds LONG_TOUCH_DURATION = 500ms;
 static constexpr std::chrono::milliseconds BIND_REPEAT_INITIAL_DELAY = 250ms;
 static constexpr std::chrono::nanoseconds BIND_REPEAT_RATE = std::chrono::nanoseconds(1s) / 15;
 
-static constexpr const char *const CONFIGURATION_FILENAME = "touch_controls.json";
+// Liquudnet: a new filename makes every install pick up the large Lucide
+// control layout once, instead of an old saved touch_controls.json silently
+// overriding it with the previous (too small) positions.
+static constexpr const char *const CONFIGURATION_FILENAME = "touch_controls_liquudnet_v2.json";
+
+static int LucideSpriteForLabel(const char *pLabel)
+{
+	if(str_comp(pLabel, "lucide_arrow_left") == 0)
+		return SPRITE_LUCIDE_ARROW_LEFT;
+	if(str_comp(pLabel, "lucide_arrow_right") == 0)
+		return SPRITE_LUCIDE_ARROW_RIGHT;
+	if(str_comp(pLabel, "lucide_arrow_up") == 0)
+		return SPRITE_LUCIDE_ARROW_UP;
+	return -1;
+}
 
 /* This is required for the localization script to find the labels of the default bind buttons specified in the configuration file:
 Localizable("Move left") Localizable("Move right") Localizable("Jump") Localizable("Prev. weapon") Localizable("Next weapon")
@@ -311,12 +327,35 @@ void CTouchControls::CTouchButton::Render(std::optional<bool> Selected, std::opt
 		dbg_assert_failed("Unhandled shape");
 	}
 
-	const float FontSize = 22.0f;
 	CButtonLabel LabelData = m_pBehavior->GetLabel();
 	CUIRect LabelRect;
 	ScreenRect.Margin(10.0f, &LabelRect);
 	SLabelProperties LabelProps;
 	LabelProps.m_MaxWidth = LabelRect.w;
+
+	if(LabelData.m_Type == CButtonLabel::EType::SPRITE)
+	{
+		const int SpriteId = LucideSpriteForLabel(LabelData.m_pLabel);
+		if(SpriteId >= 0)
+		{
+			// Draw the Lucide icon as a real texture instead of a font glyph.
+			// Half the button size leaves a clear touch target around it.
+			const float IconSize = std::min(ScreenRect.w, ScreenRect.h) * 0.52f;
+			const vec2 Center = ScreenRect.Center();
+			m_pTouchControls->Graphics()->TextureSet(g_pData->m_aImages[IMAGE_LUCIDE_ICONS].m_Id);
+			m_pTouchControls->Graphics()->QuadsBegin();
+			m_pTouchControls->Graphics()->SetColor(1.0f, 1.0f, 1.0f, 1.0f);
+			m_pTouchControls->Graphics()->SelectSprite(SpriteId);
+			const IGraphics::CQuadItem QuadItem(Center.x - IconSize / 2.0f, Center.y - IconSize / 2.0f, IconSize, IconSize);
+			m_pTouchControls->Graphics()->QuadsDrawTL(&QuadItem, 1);
+			m_pTouchControls->Graphics()->QuadsEnd();
+		}
+		return;
+	}
+
+	// Bigger buttons deserve bigger labels; clamp so tiny extra-menu buttons
+	// still look like the upstream layout.
+	const float FontSize = std::clamp(ScreenRect.h * 0.14f, 22.0f, 46.0f);
 	if(LabelData.m_Type == CButtonLabel::EType::ICON)
 	{
 		m_pTouchControls->TextRender()->SetFontPreset(EFontPreset::ICON_FONT);
