@@ -275,7 +275,7 @@ bool CMenusIngameTouchControls::RenderLayoutSettingBlock(CUIRect Block)
 
 bool CMenusIngameTouchControls::RenderBehaviorSettingBlock(CUIRect Block)
 {
-	const char *apLabelTypes[] = {Localize("Plain", "Touch button label type"), Localize("Localized", "Touch button label type"), Localize("Icon", "Touch button label type")};
+	const char *apLabelTypes[] = {Localize("Plain", "Touch button label type"), Localize("Localized", "Touch button label type"), Localize("Icon", "Touch button label type"), Localize("Sprite", "Touch button label type")};
 	static_assert(std::size(apLabelTypes) == (size_t)CTouchControls::CButtonLabel::EType::NUM_TYPES, "Insufficient label type names");
 	bool Changed = false;
 	CUIRect EditBox, LeftButton, MiddleButton, RightButton;
