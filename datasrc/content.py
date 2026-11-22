@@ -258,6 +258,7 @@ image_audio_source = Image("audio_source", "editor/audio_source.png")
 image_strongweak = Image("strongweak", "strong_weak.png")
 image_hud = Image("hud", "hud.png")
 image_extras = Image("extras", "extras.png")
+image_lucide_icons = Image("lucide_icons", "lucide_icons.png")
 
 container.images.Add(image_null)
 container.images.Add(image_game)
@@ -274,6 +275,7 @@ container.images.Add(image_audio_source)
 container.images.Add(image_strongweak)
 container.images.Add(image_hud)
 container.images.Add(image_extras)
+container.images.Add(image_lucide_icons)
 container.images.Add(Image("raceflag", "race_flag.png"))
 
 container.pickups.Add(Pickup("health"))
@@ -296,6 +298,7 @@ set_audio_source = SpriteSet("audio_source", image_audio_source, 1, 1)
 set_strongweak = SpriteSet("strongweak", image_strongweak, 3, 1)
 set_hud = SpriteSet("hud", image_hud, 16, 16)
 set_extras = SpriteSet("extras", image_extras, 16, 16)
+set_lucide_icons = SpriteSet("lucide_icons", image_lucide_icons, 3, 1)
 
 container.spritesets.Add(set_particles)
 container.spritesets.Add(set_game)
@@ -308,6 +311,7 @@ container.spritesets.Add(set_audio_source)
 container.spritesets.Add(set_strongweak)
 container.spritesets.Add(set_hud)
 container.spritesets.Add(set_extras)
+container.spritesets.Add(set_lucide_icons)
 
 container.sprites.Add(Sprite("part_slice", set_particles, 0, 0, 1, 1))
 container.sprites.Add(Sprite("part_ball", set_particles, 1, 0, 1, 1))
@@ -425,6 +429,13 @@ container.sprites.Add(Sprite("eyes", set_emoticons, 2, 3, 1, 1))
 container.sprites.Add(Sprite("question", set_emoticons, 3, 3, 1, 1))
 
 container.sprites.Add(Sprite("speedup_arrow", set_speedup_arrow, 0, 0, 1, 1))
+
+# Liquudnet: Lucide-style touch-control icons. These are real PNG sprites
+# instead of private-use font glyphs so the arrows render identically on
+# every device (and are not affected by the system font's icon coverage).
+container.sprites.Add(Sprite("lucide_arrow_left", set_lucide_icons, 0, 0, 1, 1))
+container.sprites.Add(Sprite("lucide_arrow_right", set_lucide_icons, 1, 0, 1, 1))
+container.sprites.Add(Sprite("lucide_arrow_up", set_lucide_icons, 2, 0, 1, 1))
 
 container.sprites.Add(Sprite("guibutton_off", set_guibuttons, 0, 0, 4, 4))
 container.sprites.Add(Sprite("guibutton_on", set_guibuttons, 4, 0, 4, 4))
