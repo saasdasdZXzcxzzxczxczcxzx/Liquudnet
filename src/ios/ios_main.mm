@@ -4,6 +4,7 @@
 #include <base/fs.h>
 #include <base/log.h>
 #include <base/str.h>
+#include <engine/font_icons.h>
 
 // Keep our own main, SDL_main.h would rename it to SDL_main otherwise.
 #define SDL_MAIN_HANDLED
@@ -21,6 +22,8 @@
 
 #include <atomic>
 #include <cmath>
+#include <cstring>
+#include <string>
 
 extern "C" int SDL_UIKitRunApp(int argc, char **argv, int (*mainFunction)(int, char **));
 extern "C" int SDL_main(int argc, char **argv);
@@ -54,6 +57,15 @@ struct SIosGlassButton
 {
 	UIButton *m_pButton = nil;
 	UIVisualEffectView *m_pBackground = nil;
+	// Last state submitted from the render thread. UIKit is only touched on
+	// the main queue when this actually changes, which avoids the constant
+	// per-frame layout/title work that made the device hot and laggy.
+	bool m_Visible = false;
+	float m_X = 0.0f;
+	float m_Y = 0.0f;
+	float m_Width = 0.0f;
+	float m_Height = 0.0f;
+	std::string m_Label;
 };
 static SIosGlassButton s_aGlassButtons[IOS_MAX_GLASS_BUTTONS];
 // Ids of buttons tapped since the last IosConsumeGlassButtonTap call.
@@ -63,74 +75,130 @@ struct SGlassButtonTap
 };
 static SGlassButtonTap s_aGlassButtonTaps[IOS_MAX_GLASS_BUTTONS];
 
+// FontIcon constants are Font Awesome private-use glyphs. UIKit's system
+// fonts cannot render them, so native glass buttons use SF Symbols instead.
+static const char *IosGlassSymbolForLabel(const char *pLabel)
+{
+	struct SIosGlassIconMap
+	{
+		const char *m_pFontIcon;
+		const char *m_pSymbolName;
+	};
+	static const SIosGlassIconMap s_aIconMap[] = {
+		{FontIcon::POWER_OFF, "power"},
+		{FontIcon::GEAR, "gearshape"},
+		{FontIcon::PEN_TO_SQUARE, "square.and.pencil"},
+		{FontIcon::CLAPPERBOARD, "film"},
+		{FontIcon::HOUSE, "house"},
+		{FontIcon::NEWSPAPER, "newspaper"},
+		{FontIcon::EARTH_AMERICAS, "globe.americas"},
+		{FontIcon::NETWORK_WIRED, "network"},
+		{FontIcon::STAR, "star"},
+		{FontIcon::ELLIPSIS, "ellipsis"},
+		{FontIcon::TERMINAL, "terminal"},
+	};
+	if(pLabel == nullptr)
+		return nullptr;
+	for(const SIosGlassIconMap &Map : s_aIconMap)
+	{
+		if(strcmp(pLabel, Map.m_pFontIcon) == 0)
+			return Map.m_pSymbolName;
+	}
+	return nullptr;
+}
+
 void IosSetGlassButtonFrame(SDL_Window *pWindow, int Id, bool Visible, float X, float Y, float Width, float Height, const char *pLabel)
 {
 	if(Id < 0 || Id >= IOS_MAX_GLASS_BUTTONS)
 		return;
 
-	SDL_SysWMinfo Info;
-	SDL_VERSION(&Info.version);
-	dbg_assert(SDL_GetWindowWMInfo(pWindow, &Info) == SDL_TRUE, "Failed to determine window information: %s", SDL_GetError());
-
-	UIWindow *pUiWindow = Info.info.uikit.window;
-	UIView *pRootView = pUiWindow.rootViewController.view;
-
 	SIosGlassButton &Button = s_aGlassButtons[Id];
-	if(Button.m_pButton == nil)
-	{
-		// Real system Liquid Glass material where available (iOS 26+); a
-		// regular system-material blur otherwise, so this still looks
-		// reasonable - just not the new Liquid Glass look - on older
-		// devices/OS versions.
-		UIVisualEffectView *pBackground = nil;
-		if(@available(iOS 26.0, *))
+	const std::string Label = pLabel != nullptr ? pLabel : "";
+	if(Button.m_pButton != nil && Button.m_Visible == Visible && Button.m_X == X && Button.m_Y == Y && Button.m_Width == Width && Button.m_Height == Height && Button.m_Label == Label)
+		return;
+	Button.m_Visible = Visible;
+	Button.m_X = X;
+	Button.m_Y = Y;
+	Button.m_Width = Width;
+	Button.m_Height = Height;
+	Button.m_Label = Label;
+
+	// UIKit must only be touched on the main thread. All the engine gives us
+	// is the SDL window pointer, so look up its root view inside the block.
+	dispatch_async(dispatch_get_main_queue(), ^{
+		SDL_SysWMinfo Info;
+		SDL_VERSION(&Info.version);
+		if(SDL_GetWindowWMInfo(pWindow, &Info) != SDL_TRUE)
+			return;
+		UIView *pRootView = Info.info.uikit.window.rootViewController.view;
+		if(pRootView == nil)
+			return;
+
+		SIosGlassButton &NativeButton = s_aGlassButtons[Id];
+		if(NativeButton.m_pButton == nil)
 		{
-			UIGlassEffect *pGlassEffect = [[UIGlassEffect alloc] init];
-			pBackground = [[UIVisualEffectView alloc] initWithEffect:pGlassEffect];
+			// Real system Liquid Glass material where available (iOS 26+); a
+			// regular system-material blur otherwise, so this still looks
+			// reasonable - just not the new Liquid Glass look - on older
+			// devices/OS versions.
+			UIVisualEffectView *pBackground = nil;
+			if(@available(iOS 26.0, *))
+			{
+				UIGlassEffect *pGlassEffect = [[UIGlassEffect alloc] init];
+				pBackground = [[UIVisualEffectView alloc] initWithEffect:pGlassEffect];
+			}
+			else
+			{
+				UIBlurEffect *pBlurEffect = [UIBlurEffect effectWithStyle:UIBlurEffectStyleSystemMaterialDark];
+				pBackground = [[UIVisualEffectView alloc] initWithEffect:pBlurEffect];
+			}
+			pBackground.userInteractionEnabled = NO;
+			pBackground.layer.cornerRadius = 14.0;
+			pBackground.clipsToBounds = YES;
+
+			UIButton *pNativeButton = [UIButton buttonWithType:UIButtonTypeSystem];
+			pNativeButton.userInteractionEnabled = YES;
+			[pNativeButton setTitleColor:[UIColor whiteColor] forState:UIControlStateNormal];
+			pNativeButton.tintColor = [UIColor whiteColor];
+			pNativeButton.titleLabel.font = [UIFont boldSystemFontOfSize:15.0];
+			// The blur/glass view sits behind the button's own label, filling its bounds.
+			[pNativeButton insertSubview:pBackground atIndex:0];
+			const int CapturedId = Id;
+			UIActionHandler Handler = ^(__kindof UIAction *_Nonnull Action) {
+				s_aGlassButtonTaps[CapturedId].m_Tapped.store(true);
+			};
+			[pNativeButton addAction:[UIAction actionWithHandler:Handler] forControlEvents:UIControlEventTouchUpInside];
+
+			[pRootView addSubview:pNativeButton];
+			NativeButton.m_pButton = pNativeButton;
+			NativeButton.m_pBackground = pBackground;
+		}
+
+		NativeButton.m_pButton.hidden = !Visible;
+		if(!Visible)
+			return;
+
+		// SDL positions/sizes are given to us in pixels of the drawable area, but
+		// UIKit frames are in points - same conversion as IosDisplayCutoutInsets.
+		const CGFloat Scale = pRootView.contentScaleFactor;
+		NativeButton.m_pButton.frame = CGRectMake(X / Scale, Y / Scale, Width / Scale, Height / Scale);
+		NativeButton.m_pBackground.frame = NativeButton.m_pButton.bounds;
+
+		const char *pSymbolName = IosGlassSymbolForLabel(Label.c_str());
+		if(pSymbolName != nullptr)
+		{
+			UIImageSymbolConfiguration *pSymbolConfiguration = [UIImageSymbolConfiguration configurationWithPointSize:18.0 weight:UIImageSymbolWeightBold];
+			UIImage *pImage = [UIImage systemImageNamed:[NSString stringWithUTF8String:pSymbolName]];
+			[NativeButton setImage:[pImage imageWithConfiguration:pSymbolConfiguration] forState:UIControlStateNormal];
+			[NativeButton setTitle:nil forState:UIControlStateNormal];
 		}
 		else
 		{
-			UIBlurEffect *pBlurEffect = [UIBlurEffect effectWithStyle:UIBlurEffectStyleSystemMaterialDark];
-			pBackground = [[UIVisualEffectView alloc] initWithEffect:pBlurEffect];
+			[NativeButton setImage:nil forState:UIControlStateNormal];
+			[NativeButton setTitle:[NSString stringWithUTF8String:Label.c_str()] forState:UIControlStateNormal];
 		}
-		pBackground.userInteractionEnabled = NO;
-		pBackground.layer.cornerRadius = 14.0;
-		pBackground.clipsToBounds = YES;
-
-		UIButton *pNativeButton = [UIButton buttonWithType:UIButtonTypeSystem];
-		// Menu-range buttons are real, tappable views. Touch-control-range
-		// buttons are purely visual: leaving interaction disabled lets the
-		// touches fall through to SDL and the engine's existing touch logic.
-		pNativeButton.userInteractionEnabled = Id < IOS_TOUCH_GLASS_ID_BASE;
-		[pNativeButton setTitleColor:[UIColor whiteColor] forState:UIControlStateNormal];
-		pNativeButton.titleLabel.font = [UIFont boldSystemFontOfSize:15.0];
-		// The blur/glass view sits behind the button's own label, filling its bounds.
-		[pNativeButton insertSubview:pBackground atIndex:0];
-		const int CapturedId = Id;
-		UIActionHandler Handler = ^(__kindof UIAction *_Nonnull Action) {
-			s_aGlassButtonTaps[CapturedId].m_Tapped.store(true);
-		};
-		[pNativeButton addAction:[UIAction actionWithHandler:Handler] forControlEvents:UIControlEventTouchUpInside];
-
-		[pRootView addSubview:pNativeButton];
-		Button.m_pButton = pNativeButton;
-		Button.m_pBackground = pBackground;
-	}
-
-	Button.m_pButton.hidden = !Visible;
-	if(!Visible)
-	{
-		return;
-	}
-
-	// SDL positions/sizes are given to us in pixels of the drawable area, but
-	// UIKit frames are in points - same conversion as IosDisplayCutoutInsets.
-	const CGFloat Scale = pRootView.contentScaleFactor;
-	const CGRect Frame = CGRectMake(X / Scale, Y / Scale, Width / Scale, Height / Scale);
-	Button.m_pButton.frame = Frame;
-	Button.m_pBackground.frame = Button.m_pButton.bounds;
-	[Button.m_pButton setTitle:[NSString stringWithUTF8String:pLabel] forState:UIControlStateNormal];
-	[pRootView bringSubviewToFront:Button.m_pButton];
+		[pRootView bringSubviewToFront:NativeButton.m_pButton];
+	});
 }
 
 bool IosConsumeGlassButtonTap(int Id)

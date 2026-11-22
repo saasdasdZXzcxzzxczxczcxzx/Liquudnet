@@ -46,12 +46,10 @@ const char *InitIos();
 /** Maximum number of simultaneous native Liquid Glass overlay buttons. */
 // Enough slots for every DoButton_Menu / DoButton_MenuTab drawn on a single
 // menu frame (settings pages are the heaviest). The ids are reused per frame.
-// Menu views use the first range, in-game touch-control overlays the second,
-// so the two render passes never overwrite each other's buttons.
+// In-game touch controls deliberately use the engine-rendered buttons only:
+// UIKit overlays there blocked touches and added per-frame UI work.
 #define IOS_GLASS_MENU_BUTTONS 32
-#define IOS_TOUCH_GLASS_ID_BASE 32
-#define IOS_TOUCH_GLASS_BUTTONS 32
-#define IOS_MAX_GLASS_BUTTONS (IOS_GLASS_MENU_BUTTONS + IOS_TOUCH_GLASS_BUTTONS)
+#define IOS_MAX_GLASS_BUTTONS IOS_GLASS_MENU_BUTTONS
 
 /**
  * Shows, hides or repositions a native UIKit "Liquid Glass" button
