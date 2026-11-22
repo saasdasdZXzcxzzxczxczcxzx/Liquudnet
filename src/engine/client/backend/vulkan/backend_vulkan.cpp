@@ -4176,10 +4176,12 @@ public:
 
 		VkExtent2D AutoViewportExtent = RetSize;
 		bool UsesForcedViewport = false;
-		// keep this in sync with graphics_threaded AdjustViewport's check
-		if(AutoViewportExtent.height > 4 * AutoViewportExtent.width / 5)
+		// Liquudnet: keep this in sync with graphics_threaded AdjustViewport's
+		// check (cl_liquudnet_aspect).
+		const float ForcedAspect = IGraphics::ForcedAspectFromMode(g_Config.m_ClLiquudnetAspect);
+		if(ForcedAspect > 0.0f && (float)AutoViewportExtent.height > (float)AutoViewportExtent.width / ForcedAspect)
 		{
-			AutoViewportExtent.height = 4 * AutoViewportExtent.width / 5;
+			AutoViewportExtent.height = static_cast<uint32_t>(AutoViewportExtent.width / ForcedAspect);
 			UsesForcedViewport = true;
 		}
 
