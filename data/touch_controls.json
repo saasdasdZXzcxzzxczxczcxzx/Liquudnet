@@ -5,50 +5,50 @@
 	"background-color-active": "33333340",
 	"touch-buttons": [
 		{
-			"x": 20000,
-			"y": 850000,
-			"w": 160000,
-			"h": 133333,
+			"x": 10000,
+			"y": 833333,
+			"w": 190000,
+			"h": 166667,
 			"shape": "circle",
 			"visibilities": [
 				"ingame"
 			],
 			"behavior": {
 				"type": "bind",
-				"label": "Move left",
-				"label-type": "localized",
+				"label": "",
+				"label-type": "icon",
 				"command": "+left"
 			}
 		},
 		{
-			"x": 220000,
-			"y": 850000,
-			"w": 160000,
-			"h": 133333,
+			"x": 230000,
+			"y": 833333,
+			"w": 190000,
+			"h": 166667,
 			"shape": "circle",
 			"visibilities": [
 				"ingame"
 			],
 			"behavior": {
 				"type": "bind",
-				"label": "Move right",
-				"label-type": "localized",
+				"label": "",
+				"label-type": "icon",
 				"command": "+right"
 			}
 		},
 		{
-			"x": 120000,
-			"y": 683333,
-			"w": 160000,
-			"h": 133333,
+			"x": 140000,
+			"y": 666667,
+			"w": 190000,
+			"h": 166667,
 			"shape": "circle",
 			"visibilities": [
 				"ingame"
 			],
 			"behavior": {
 				"type": "bind",
-				"label": "Jump",
-				"label-type": "localized",
+				"label": "",
+				"label-type": "icon",
 				"command": "+jump"
 			}
 		},
