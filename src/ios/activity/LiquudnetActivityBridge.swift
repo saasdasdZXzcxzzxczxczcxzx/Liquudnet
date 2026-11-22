@@ -10,50 +10,97 @@ import UIKit
 // so this class exists purely to give the rest of the app - which is
 // C++/Objective-C++ - a plain Objective-C-compatible surface to call.
 //
-// This is deliberately kept at the floor the main app itself targets
-// (see IOS_DEPLOYMENT_TARGET), unlike LiquudnetWidgetExtension, which can
-// require iOS 16.1+ on its own since it's a separate optional extension.
 // Every method below guards its real work behind `if #available(iOS
 // 16.2, *)` and no-ops below that, so this file compiles and the engine
-// can call it unconditionally on any supported iOS version - the
-// `@objc`-exposed methods themselves carry no `@available` annotation
-// (Objective-C has no concept of it), only their *implementations* branch
-// on iOS version at runtime. 16.2, not 16.1: the ActivityContent-based
-// request/update/end APIs used below were introduced in iOS 16.2 (16.1
-// only has the older contentState-only overloads, which this code does
-// not use).
+// can call it unconditionally on any supported iOS version.
 @objc(LiquudnetActivityBridge)
 public class LiquudnetActivityBridge: NSObject {
     // Type-erased so the stored property itself doesn't need an
-    // `@available` annotation (which would force every access, even
-    // from within an `if #available` block, to jump through extra hoops).
+    // `@available` annotation.
     private static var activity: Any?
 
-    /// Starts the Live Activity if one isn't already running. No-op if one
-    /// is already active (call `update` instead), if Live Activities are
-    /// disabled system-wide, or on iOS < 16.2.
-    @objc public static func start(withStatus status: String) {
+    // Last reason ActivityKit refused to start/update an activity. Exposed
+    // to the engine so it ends up in the ordinary DDNet log - previously
+    // every error here was swallowed, which made "Activity не стартует"
+    // impossible to diagnose from a device.
+    private static var lastError: String = "none"
+
+    private static func log(_ message: String) {
+        // NSLog goes to the iOS unified log (visible in Console.app and in
+        // crash/sysdiagnose reports) even though the engine's own stdout is
+        // not captured for App Store builds.
+        NSLog("[LiquudnetActivity] %@", message)
+    }
+
+    /// Full, human-readable snapshot of ActivityKit state. Called from the
+    /// engine right after a start attempt and once during startup, so the
+    /// reason a Dynamic Island didn't appear is visible in the game log.
+    @objc public static var diagnostics: String {
+        var parts: [String] = []
+        let osVersion = ProcessInfo.processInfo.operatingSystemVersion
+        parts.append("iOS \(osVersion.majorVersion).\(osVersion.minorVersion).\(osVersion.patchVersion)")
         if #available(iOS 16.2, *) {
-            guard activity == nil else { return }
-            guard ActivityAuthorizationInfo().areActivitiesEnabled else { return }
+            parts.append("available=yes")
+            parts.append("activitiesEnabled=\(ActivityAuthorizationInfo().areActivitiesEnabled)")
+            parts.append("storedActivity=\(activity == nil ? "nil" : "set")")
+            parts.append("runningActivities=\(Activity<LiquudnetActivityAttributes>.activities.count)")
+            parts.append("lastError=\(lastError)")
+            let states = Activity<LiquudnetActivityAttributes>.activities.map { String(describing: $0.state) }
+            parts.append("activityStates=\(describeStates(states))")
+        } else {
+            parts.append("available=no (needs iOS 16.2+)")
+            parts.append("lastError=\(lastError)")
+        }
+        let pluginPath = Bundle.main.bundleURL
+            .appendingPathComponent("PlugIns")
+            .appendingPathComponent("LiquudnetWidgetExtension.appex")
+        parts.append("widgetEmbedded=\(FileManager.default.fileExists(atPath: pluginPath.path))")
+        let result = parts.joined(separator: ", ")
+        log(result)
+        return result
+    }
+
+    private static func describeStates(_ values: [String]) -> String {
+        values.isEmpty ? "[]" : values.joined(separator: "/")
+    }
+
+    /// Starts the Live Activity if one isn't already running. No-op if one
+    /// is already active, if Live Activities are disabled system-wide, or
+    /// on iOS < 16.2. Every refusal is logged (see `diagnostics`).
+    @objc public static func start(withStatus status: String) {
+        log("start requested, status=\(status), mainThread=\(Thread.isMainThread)")
+        if #available(iOS 16.2, *) {
+            guard activity == nil else {
+                lastError = "already started in this process"
+                log("start skipped: \(lastError)")
+                return
+            }
+            let authorization = ActivityAuthorizationInfo()
+            guard authorization.areActivitiesEnabled else {
+                lastError = "Live Activities disabled in Settings (areActivitiesEnabled=false)"
+                log("start failed: \(lastError)")
+                return
+            }
             let state = LiquudnetActivityAttributes.ContentState(
                 status: status,
                 iconPng: Self.appIconPngData())
             let content = ActivityContent(state: state, staleDate: nil, relevanceScore: 0.0)
             do {
-                activity = try Activity<LiquudnetActivityAttributes>.request(
+                let started = try Activity<LiquudnetActivityAttributes>.request(
                     attributes: LiquudnetActivityAttributes(),
                     content: content,
                     pushType: nil)
+                activity = started
+                lastError = "none"
+                log("start OK, id=\(started.id), state=\(String(describing: started.state))")
             } catch {
-                // Deliberately swallowed: this is a cosmetic, optional
-                // feature, and ActivityKit can refuse to start an activity
-                // for reasons outside this app's control (Live Activities
-                // turned off by the person in Settings, a simulator
-                // limitation, etc.) - that should never be treated as a
-                // hard error by the engine.
+                lastError = "Activity.request failed: \(error.localizedDescription) (domain=\((error as NSError).domain), code=\((error as NSError).code))"
                 activity = nil
+                log("start failed: \(lastError)")
             }
+        } else {
+            lastError = "iOS 16.2+ required"
+            log("start skipped: \(lastError)")
         }
     }
 
@@ -61,44 +108,60 @@ public class LiquudnetActivityBridge: NSObject {
     /// running.
     @objc public static func update(withStatus status: String) {
         if #available(iOS 16.2, *) {
-            guard let typedActivity = activity as? Activity<LiquudnetActivityAttributes> else { return }
+            guard let typedActivity = activity as? Activity<LiquudnetActivityAttributes> else {
+                log("update skipped: no stored activity")
+                return
+            }
             let state = LiquudnetActivityAttributes.ContentState(
                 status: status,
                 iconPng: Self.appIconPngData())
             let content = ActivityContent(state: state, staleDate: nil, relevanceScore: 0.0)
             Task {
-                await typedActivity.update(content)
+                do {
+                    try await typedActivity.update(content)
+                    log("update OK")
+                } catch {
+                    lastError = "Activity.update failed: \(error.localizedDescription)"
+                    log("update failed: \(lastError)")
+                }
             }
         }
     }
 
-    /// Ends the running Live Activity immediately. No-op if none is
-    /// running. Also ends activities of this type that were started by a
-    /// previous process (e.g. one that was killed instead of quitting
-    /// cleanly), so a quit always clears the Dynamic Island.
+    /// Ends the running Live Activity immediately. Also ends activities of
+    /// this type left over from a previous process (e.g. one that was killed
+    /// instead of quitting cleanly).
     @objc public static func end() {
         if #available(iOS 16.2, *) {
             activity = nil
             Task {
-                for Current in Activity<LiquudnetActivityAttributes>.activities {
-                    await Current.end(nil, dismissalPolicy: .immediate)
+                let all = Activity<LiquudnetActivityAttributes>.activities
+                log("end requested, found \(all.count) running activities")
+                for current in all {
+                    await current.end(nil, dismissalPolicy: .immediate)
                 }
             }
         }
     }
 
     private static func appIconPngData() -> Data {
-        // UIKit has no public API for reading an appiconset back as an image,
-        // so the app bundle also carries the plain DDNet PNG (see
-        // CMakeLists.txt: DDNet_256x256x32.png is copied as a resource).
-        // The widget extension only receives the resulting bytes in
-        // ContentState, so it needs no icon asset of its own.
         guard let url = Bundle.main.url(forResource: "DDNet_256x256x32", withExtension: "png"),
-              let data = try? Data(contentsOf: url) else
+              let data = try? Data(contentsOf: url),
+              let image = UIImage(data: data) else
         {
+            log("app icon PNG resource missing from app bundle")
             return Data()
         }
-        return data
+        // The bundled 256x256 icon is ~12 KB. ActivityKit content states are
+        // meant to be tiny, and an oversized state is a plausible reason for
+        // Activity.request to be rejected outright. The island renders this
+        // at a few dozen points, so ship a small 48x48 thumbnail instead.
+        let size = CGSize(width: 48, height: 48)
+        let renderer = UIGraphicsImageRenderer(size: size)
+        let thumbnail = renderer.image { _ in
+            image.draw(in: CGRect(origin: .zero, size: size))
+        }
+        return thumbnail.pngData() ?? Data()
     }
 
     @objc public static var isRunning: Bool {
