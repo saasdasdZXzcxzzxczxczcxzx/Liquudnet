@@ -36,11 +36,25 @@ public class LiquudnetActivityBridge: NSObject {
     // thread. The engine calls this bridge from its render thread, so hop
     // over synchronously (unless we're already on main) and keep the
     // start/update/end calls ordered with the engine's log diagnostics.
-    private static func runOnMain(_ work: @escaping () -> Void) {
+    private static func onMain<T>(_ work: () -> T) -> T {
         if Thread.isMainThread {
-            work()
-        } else {
-            DispatchQueue.main.sync(execute: work)
+            return work()
+        }
+        return DispatchQueue.main.sync(execute: work)
+    }
+
+    // If the process was killed while a Live Activity was still on screen,
+    // the system keeps that activity alive but our static `activity` is nil
+    // after relaunch. Adopt it so subsequent status updates go to the
+    // existing island instead of trying to create a second one.
+    @available(iOS 16.2, *)
+    private static func adoptExistingIfNeeded() {
+        guard activity == nil else {
+            return
+        }
+        if let existing = Activity<LiquudnetActivityAttributes>.activities.first {
+            activity = existing
+            log("adopted existing activity, id=\(existing.id)")
         }
     }
 
@@ -48,53 +62,68 @@ public class LiquudnetActivityBridge: NSObject {
     /// engine right after a start attempt and once during startup, so the
     /// reason a Dynamic Island didn't appear is visible in the game log.
     @objc public static var diagnostics: String {
-        var parts: [String] = []
-        let osVersion = ProcessInfo.processInfo.operatingSystemVersion
-        parts.append("iOS \(osVersion.majorVersion).\(osVersion.minorVersion).\(osVersion.patchVersion)")
-        if #available(iOS 16.2, *) {
-            parts.append("available=yes")
-            parts.append("activitiesEnabled=\(ActivityAuthorizationInfo().areActivitiesEnabled)")
-            parts.append("storedActivity=\(activity == nil ? "nil" : "set")")
-            parts.append("runningActivities=\(Activity<LiquudnetActivityAttributes>.activities.count)")
-            parts.append("lastError=\(lastError)")
-        } else {
-            parts.append("available=no (needs iOS 16.2+)")
-            parts.append("lastError=\(lastError)")
+        onMain {
+            var parts: [String] = []
+            let osVersion = ProcessInfo.processInfo.operatingSystemVersion
+            parts.append("iOS \(osVersion.majorVersion).\(osVersion.minorVersion).\(osVersion.patchVersion)")
+            if #available(iOS 16.2, *) {
+                adoptExistingIfNeeded()
+                parts.append("available=yes")
+                parts.append("activitiesEnabled=\(ActivityAuthorizationInfo().areActivitiesEnabled)")
+                parts.append("storedActivity=\(activity == nil ? "nil" : "set")")
+                parts.append("runningActivities=\(Activity<LiquudnetActivityAttributes>.activities.count)")
+                parts.append("lastError=\(lastError)")
+            } else {
+                parts.append("available=no (needs iOS 16.2+)")
+                parts.append("lastError=\(lastError)")
+            }
+            let pluginPath = Bundle.main.bundleURL
+                .appendingPathComponent("PlugIns")
+                .appendingPathComponent("LiquudnetWidgetExtension.appex")
+            parts.append("widgetEmbedded=\(FileManager.default.fileExists(atPath: pluginPath.path))")
+            let result = parts.joined(separator: ", ")
+            log(result)
+            return result
         }
-        let pluginPath = Bundle.main.bundleURL
-            .appendingPathComponent("PlugIns")
-            .appendingPathComponent("LiquudnetWidgetExtension.appex")
-        parts.append("widgetEmbedded=\(FileManager.default.fileExists(atPath: pluginPath.path))")
-        let result = parts.joined(separator: ", ")
-        log(result)
-        return result
     }
 
     /// Starts the Live Activity if one isn't already running. No-op if one
-    /// is already active, if Live Activities are disabled system-wide, or
-    /// on iOS < 16.2. Every refusal is logged (see `diagnostics`).
+    /// is already active or on iOS < 16.2. Every refusal is logged (see
+    /// `diagnostics`).
     @objc public static func start(withStatus status: String) {
-        log("start requested, status=\(status), mainThread=\(Thread.isMainThread)")
-        if !Thread.isMainThread {
-            runOnMain { Self.start(withStatus: status) }
-            return
-        }
-        if #available(iOS 16.2, *) {
-            guard activity == nil else {
-                lastError = "already started in this process"
+        onMain {
+            log("start requested, status=\(status), mainThread=\(Thread.isMainThread)")
+            guard #available(iOS 16.2, *) else {
+                lastError = "iOS 16.2+ required"
                 log("start skipped: \(lastError)")
                 return
             }
-            let authorization = ActivityAuthorizationInfo()
-            guard authorization.areActivitiesEnabled else {
-                lastError = "Live Activities disabled in Settings (areActivitiesEnabled=false)"
-                log("start failed: \(lastError)")
-                return
-            }
+            adoptExistingIfNeeded()
+
             let state = LiquudnetActivityAttributes.ContentState(
                 status: status,
                 iconPng: Self.appIconPngData())
             let content = ActivityContent(state: state, staleDate: nil, relevanceScore: 0.0)
+
+            if activity != nil {
+                // An activity from an earlier process is already on screen:
+                // refresh it instead of silently doing nothing.
+                lastError = "none"
+                log("start: adopting/resuming already running activity")
+                Task {
+                    for current in Activity<LiquudnetActivityAttributes>.activities {
+                        await current.update(content)
+                    }
+                }
+                return
+            }
+
+            // Do NOT gate on ActivityAuthorizationInfo().areActivitiesEnabled.
+            // It can report false in some foreground states even when
+            // Activity.request would succeed; let ActivityKit itself decide
+            // and log the real error if the user disabled Live Activities.
+            let authorization = ActivityAuthorizationInfo()
+            log("activitiesEnabled=\(authorization.areActivitiesEnabled), attempting request anyway")
             do {
                 let started = try Activity<LiquudnetActivityAttributes>.request(
                     attributes: LiquudnetActivityAttributes(),
@@ -108,22 +137,20 @@ public class LiquudnetActivityBridge: NSObject {
                 activity = nil
                 log("start failed: \(lastError)")
             }
-        } else {
-            lastError = "iOS 16.2+ required"
-            log("start skipped: \(lastError)")
         }
     }
 
     /// Updates the running Live Activity's status text. No-op if none is
     /// running.
     @objc public static func update(withStatus status: String) {
-        if !Thread.isMainThread {
-            runOnMain { Self.update(withStatus: status) }
-            return
-        }
-        if #available(iOS 16.2, *) {
+        onMain {
+            guard #available(iOS 16.2, *) else {
+                return
+            }
+            adoptExistingIfNeeded()
             guard let typedActivity = activity as? Activity<LiquudnetActivityAttributes> else {
-                log("update skipped: no stored activity")
+                log("update skipped: no stored activity, starting one")
+                start(withStatus: status)
                 return
             }
             let state = LiquudnetActivityAttributes.ContentState(
@@ -141,11 +168,10 @@ public class LiquudnetActivityBridge: NSObject {
     /// this type left over from a previous process (e.g. one that was killed
     /// instead of quitting cleanly).
     @objc public static func end() {
-        if !Thread.isMainThread {
-            runOnMain { Self.end() }
-            return
-        }
-        if #available(iOS 16.2, *) {
+        onMain {
+            guard #available(iOS 16.2, *) else {
+                return
+            }
             activity = nil
             Task {
                 let all = Activity<LiquudnetActivityAttributes>.activities
@@ -178,9 +204,12 @@ public class LiquudnetActivityBridge: NSObject {
     }
 
     @objc public static var isRunning: Bool {
-        if #available(iOS 16.2, *) {
+        onMain {
+            guard #available(iOS 16.2, *) else {
+                return false
+            }
+            adoptExistingIfNeeded()
             return activity is Activity<LiquudnetActivityAttributes>
         }
-        return false
     }
 }
