@@ -189,13 +189,13 @@ void IosSetGlassButtonFrame(SDL_Window *pWindow, int Id, bool Visible, float X, 
 		{
 			UIImageSymbolConfiguration *pSymbolConfiguration = [UIImageSymbolConfiguration configurationWithPointSize:18.0 weight:UIImageSymbolWeightBold];
 			UIImage *pImage = [UIImage systemImageNamed:[NSString stringWithUTF8String:pSymbolName]];
-			[NativeButton setImage:[pImage imageWithConfiguration:pSymbolConfiguration] forState:UIControlStateNormal];
-			[NativeButton setTitle:nil forState:UIControlStateNormal];
+			[NativeButton.m_pButton setImage:[pImage imageWithConfiguration:pSymbolConfiguration] forState:UIControlStateNormal];
+			[NativeButton.m_pButton setTitle:nil forState:UIControlStateNormal];
 		}
 		else
 		{
-			[NativeButton setImage:nil forState:UIControlStateNormal];
-			[NativeButton setTitle:[NSString stringWithUTF8String:Label.c_str()] forState:UIControlStateNormal];
+			[NativeButton.m_pButton setImage:nil forState:UIControlStateNormal];
+			[NativeButton.m_pButton setTitle:[NSString stringWithUTF8String:Label.c_str()] forState:UIControlStateNormal];
 		}
 		[pRootView bringSubviewToFront:NativeButton.m_pButton];
 	});
