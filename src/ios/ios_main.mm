@@ -56,7 +56,7 @@ void IosDisplayCutoutInsets(SDL_Window *pWindow, int *pLeft, int *pRight)
 struct SIosGlassButton
 {
 	UIButton *m_pButton = nil;
-	UIVisualEffectView *m_pBackground = nil;
+	UIView *m_pBackground = nil;
 	// Last state submitted from the render thread. UIKit is only touched on
 	// the main queue when this actually changes, which avoids the constant
 	// per-frame layout/title work that made the device hot and laggy.
@@ -137,21 +137,15 @@ void IosSetGlassButtonFrame(SDL_Window *pWindow, int Id, bool Visible, float X, 
 		SIosGlassButton &NativeButton = s_aGlassButtons[Id];
 		if(NativeButton.m_pButton == nil)
 		{
-			// Real system Liquid Glass material where available (iOS 26+); a
-			// regular system-material blur otherwise, so this still looks
-			// reasonable - just not the new Liquid Glass look - on older
-			// devices/OS versions.
-			UIVisualEffectView *pBackground = nil;
-			if(@available(iOS 26.0, *))
-			{
-				UIGlassEffect *pGlassEffect = [[UIGlassEffect alloc] init];
-				pBackground = [[UIVisualEffectView alloc] initWithEffect:pGlassEffect];
-			}
-			else
-			{
-				UIBlurEffect *pBlurEffect = [UIBlurEffect effectWithStyle:UIBlurEffectStyleSystemMaterialDark];
-				pBackground = [[UIVisualEffectView alloc] initWithEffect:pBlurEffect];
-			}
+			// Liquudnet: no UIGlassEffect/UIBlurEffect here. Both ask the GPU
+			// to sample and blur the live framebuffer for every overlay view;
+			// with ~20 menu buttons that alone made the phone hot. A plain
+			// tinted, rounded UIView gives a glass-like capsule without any
+			// per-frame sampling work.
+			UIView *pBackground = [[UIView alloc] init];
+			pBackground.backgroundColor = [UIColor colorWithWhite:0.10f alpha:0.72f];
+			pBackground.layer.borderColor = [UIColor colorWithWhite:1.0f alpha:0.22f].CGColor;
+			pBackground.layer.borderWidth = 1.0f;
 			pBackground.userInteractionEnabled = NO;
 			pBackground.layer.cornerRadius = 14.0;
 			pBackground.clipsToBounds = YES;
