@@ -810,3 +810,4 @@ MACRO_CONFIG_INT(ClPlayerTrail, cl_player_trail, 0, 0, 1, CFGFLAG_CLIENT | CFGFL
 MACRO_CONFIG_COL(ClPlayerTrailColor, cl_player_trail_color, 2576141452, CFGFLAG_CLIENT | CFGFLAG_SAVE | CFGFLAG_COLALPHA, "Player movement trail color")
 MACRO_CONFIG_INT(ClPlayerTrailLength, cl_player_trail_length, 20, 2, 60, CFGFLAG_CLIENT | CFGFLAG_SAVE, "Number of past positions kept in the player movement trail")
 MACRO_CONFIG_INT(ClPlayerTrailWidth, cl_player_trail_width, 24, 2, 64, CFGFLAG_CLIENT | CFGFLAG_SAVE, "Thickness of the player movement trail, in game-world units (a tee is about 64 wide)")
+MACRO_CONFIG_INT(ClLiquudnetAspect, cl_liquudnet_aspect, 4, 0, 5, CFGFLAG_CLIENT | CFGFLAG_SAVE, "Liquudnet game view aspect ratio: 0 = native (fill screen), 1 = 4:3, 2 = 16:9, 3 = 16:10, 4 = 5:4 (default), 5 = 1:1")
