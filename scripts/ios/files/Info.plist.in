@@ -5,7 +5,7 @@
 		<key>CFBundleDevelopmentRegion</key>
 		<string>en</string>
 		<key>CFBundleDisplayName</key>
-		<string>${CLIENT_EXECUTABLE}</string>
+		<string>Liquuidnet</string>
 		<key>CFBundleExecutable</key>
 		<string>${CLIENT_EXECUTABLE}</string>
 		<key>CFBundleIdentifier</key>
