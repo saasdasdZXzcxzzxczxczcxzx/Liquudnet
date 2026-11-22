@@ -1279,7 +1279,10 @@ void CGameClient::OnStateChange(int NewState, int OldState)
 	// the next launch if the process was killed.
 #if defined(CONF_PLATFORM_IOS)
 	if(NewState == IClient::STATE_ONLINE)
+	{
+		log_info("activity", "Reached STATE_ONLINE, requesting Live Activity");
 		Graphics()->SetLiveActivityActive(true, "Playing Liquudnet");
+	}
 #endif
 
 	// then change the state
