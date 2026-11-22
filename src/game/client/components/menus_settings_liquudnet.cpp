@@ -48,40 +48,15 @@ void CMenus::RenderSettingsLiquudnet(CUIRect MainView)
 		Ui()->DoScrollbarOption(&g_Config.m_ClPlayerTrailWidth, &g_Config.m_ClPlayerTrailWidth, &Button, Localize("Trail width"), 2, 64);
 	}
 
-	// Native UIKit Liquid Glass button (see ios/ios_main.mm,
-	// IGraphics::SetNativeGlassButton). The engine's old frosted-glass
-	// backdrop was removed - it overheated iOS devices.
+	// Native UIKit Liquid Glass button. DoButton_Menu routes this through
+	// the shared per-frame native-glass layer on iOS (see menus.cpp); the
+	// engine's old frosted-glass backdrop was removed because it overheated
+	// iOS devices.
 	MainView.HSplitTop(20.0f, nullptr, &MainView);
 	MainView.HSplitTop(40.0f, &Button, &MainView);
 	Button.VSplitLeft(280.0f, &Button, nullptr);
-
-	static int s_GlassButtonTapCount = 0;
-
-#if defined(CONF_PLATFORM_IOS)
-	// Convert the reserved CUIRect, in UI units (0..Ui()->Screen()->w/h),
-	// into the pixel coordinates the native overlay needs. On iOS Liquudnet
-	// renders edge-to-edge (IosDisplayCutoutInsets returns zero), so no extra
-	// cutout offset has to be applied here.
-	const CUIRect *pUiScreen = Ui()->Screen();
-	const float ScaleX = Graphics()->ScreenWidth() / pUiScreen->w;
-	const float ScaleY = Graphics()->ScreenHeight() / pUiScreen->h;
-
-	char aLabel[64];
-	str_format(aLabel, sizeof(aLabel), "Glass Button (%d)", s_GlassButtonTapCount);
-	Graphics()->SetNativeGlassButton(0, true, Button.x * ScaleX, Button.y * ScaleY, Button.w * ScaleX, Button.h * ScaleY, aLabel);
-	if(Graphics()->ConsumeNativeGlassButtonTap(0))
-	{
-		s_GlassButtonTapCount++;
-	}
-	// Nothing drawn here by the engine on purpose: the real button is the
-	// native view rendered on top, not anything in this CUIRect's footprint.
-#else
-	static CButtonContainer s_GlassButtonFallbackId;
-	if(DoButton_Menu(&s_GlassButtonFallbackId, Localize("Glass Button (iOS only)"), 0, &Button))
-	{
-		s_GlassButtonTapCount++;
-	}
-#endif
+	static CButtonContainer s_GlassButtonId;
+	DoButton_Menu(&s_GlassButtonId, "Glass Button", 0, &Button);
 
 	// --- Dynamic Island / Live Activity -----------------------------------
 	MainView.HSplitTop(20.0f, nullptr, &MainView);
@@ -98,4 +73,17 @@ void CMenus::RenderSettingsLiquudnet(CUIRect MainView)
 #else
 	DoButton_Menu(&s_LiveActivityToggleId, Localize("Dynamic Island (iOS only)"), 0, &Button);
 #endif
+
+	// --- Game view aspect ratio -------------------------------------------
+	MainView.HSplitTop(20.0f, nullptr, &MainView);
+	MainView.HSplitTop(40.0f, &Button, &MainView);
+	Button.VSplitLeft(280.0f, &Button, nullptr);
+	static const char *const s_apAspects[] = {"Aspect ratio: native", "Aspect ratio: 4:3", "Aspect ratio: 16:9", "Aspect ratio: 16:10", "Aspect ratio: 5:4", "Aspect ratio: 1:1"};
+	static CButtonContainer s_AspectButtonId;
+	const int Aspect = (g_Config.m_ClLiquudnetAspect < 0 || g_Config.m_ClLiquudnetAspect > 5) ? 0 : g_Config.m_ClLiquudnetAspect;
+	if(DoButton_Menu(&s_AspectButtonId, s_apAspects[Aspect], 0, &Button))
+	{
+		g_Config.m_ClLiquudnetAspect = (Aspect + 1) % 6;
+		Graphics()->RefreshViewport();
+	}
 }

@@ -26,6 +26,10 @@
 #include <game/client/gameclient.h>
 #include <game/localization.h>
 
+#if defined(CONF_PLATFORM_IOS)
+#include <ios/ios_main.h>
+#endif
+
 #include <algorithm>
 #include <cstdlib>
 #include <functional>
@@ -290,6 +294,25 @@ void CTouchControls::CTouchButton::Render(std::optional<bool> Selected, std::opt
 	case EButtonShape::RECT:
 	{
 		ScreenRect.Draw(ButtonColor, m_pTouchControls->m_EditingActive ? IGraphics::CORNER_NONE : m_BackgroundCorners, 10.0f);
+#if defined(CONF_PLATFORM_IOS)
+		// Native UIKit Liquid Glass overlay for in-game touch buttons. The
+		// view is deliberately non-interactive (see ios_main.mm), so the
+		// touch still reaches the engine's existing button logic unchanged.
+		if(!m_pTouchControls->m_EditingActive)
+		{
+			const int Id = m_pTouchControls->m_TouchGlassButtonCounter++;
+			if(Id < IOS_TOUCH_GLASS_BUTTONS)
+			{
+				const CUIRect *pScreen = m_pTouchControls->Ui()->Screen();
+				const float ScaleX = m_pTouchControls->Graphics()->ScreenWidth() / pScreen->w;
+				const float ScaleY = m_pTouchControls->Graphics()->ScreenHeight() / pScreen->h;
+				m_pTouchControls->Graphics()->SetNativeGlassButton(
+					IOS_TOUCH_GLASS_ID_BASE + Id, true,
+					ScreenRect.x * ScaleX, ScreenRect.y * ScaleY,
+					ScreenRect.w * ScaleX, ScreenRect.h * ScaleY, "");
+			}
+		}
+#endif
 		break;
 	}
 	case EButtonShape::CIRCLE:
@@ -820,6 +843,14 @@ bool CTouchControls::OnTouchState(std::vector<IInput::CTouchFingerState> &vTouch
 
 void CTouchControls::OnRender()
 {
+#if defined(CONF_PLATFORM_IOS)
+	// The native glass views stay on screen once created, so clear this
+	// frame's touch-button range before deciding whether to draw any of
+	// them. The menu range is owned by CMenus::OnRender().
+	for(int Id = 0; Id < IOS_TOUCH_GLASS_BUTTONS; ++Id)
+		Graphics()->SetNativeGlassButton(IOS_TOUCH_GLASS_ID_BASE + Id, false, 0.0f, 0.0f, 0.0f, 0.0f, "");
+	m_TouchGlassButtonCounter = 0;
+#endif
 	if(!g_Config.m_ClTouchControls)
 		return;
 	if(Client()->State() != IClient::STATE_ONLINE && Client()->State() != IClient::STATE_DEMOPLAYBACK)

@@ -59,6 +59,12 @@ public:
 	bool DoLine_RadioMenu(CUIRect &View, const char *pLabel, std::vector<CButtonContainer> &vButtonContainers, const std::vector<const char *> &vLabels, const std::vector<int> &vValues, int &Value);
 
 private:
+	// Liquudnet: central per-frame routing of engine menu buttons to native
+	// UIKit Liquid Glass views on iOS (see ios_main.mm). Ids are handed out in
+	// draw order and reset at the start of every CMenus::OnRender().
+	int m_GlassButtonCounter = 0;
+	bool IosGlassButton(const CUIRect *pRect, const char *pText, bool &Tap);
+
 	CUi::SColorPickerPopupContext m_ColorPickerPopupContext;
 	ColorHSLA DoLine_ColorPicker(CButtonContainer *pResetId, float LineSize, float LabelSize, float BottomMargin, CUIRect *pMainRect, const char *pText, unsigned int *pColorValue, ColorRGBA DefaultColor, bool CheckBoxSpacing = true, int *pCheckBoxValue = nullptr, bool Alpha = false);
 	ColorHSLA DoButton_ColorPicker(const CUIRect *pRect, unsigned int *pHslaColor, bool Alpha);

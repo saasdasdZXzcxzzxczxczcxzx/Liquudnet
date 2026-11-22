@@ -126,8 +126,39 @@ int CMenus::DoButton_Toggle(const void *pId, int Checked, const CUIRect *pRect, 
 	return Active ? Ui()->DoButtonLogic(pId, Checked, pRect, Flags) : 0;
 }
 
+bool CMenus::IosGlassButton(const CUIRect *pRect, const char *pText, bool &Tap)
+{
+	Tap = false;
+#if defined(CONF_PLATFORM_IOS)
+	if(m_GlassButtonCounter >= IOS_GLASS_MENU_BUTTONS)
+		return false;
+	const int Id = m_GlassButtonCounter++;
+	const CUIRect *pScreen = Ui()->Screen();
+	const float ScaleX = Graphics()->ScreenWidth() / pScreen->w;
+	const float ScaleY = Graphics()->ScreenHeight() / pScreen->h;
+	Graphics()->SetNativeGlassButton(Id, true, pRect->x * ScaleX, pRect->y * ScaleY, pRect->w * ScaleX, pRect->h * ScaleY, pText != nullptr ? pText : "");
+	Tap = Graphics()->ConsumeNativeGlassButtonTap(Id);
+	return true;
+#else
+	(void)pRect;
+	(void)pText;
+	return false;
+#endif
+}
+
 int CMenus::DoButton_Menu(CButtonContainer *pButtonContainer, const char *pText, int Checked, const CUIRect *pRect, const unsigned Flags, const char *pImageName, int Corners, float Rounding, float FontFactor, ColorRGBA Color, const void *pImageHotId)
 {
+	// Liquudnet: on iOS every menu button becomes a real UIKit Liquid Glass
+	// view. Skip the engine-drawn version underneath it - otherwise its text
+	// would show through the glass and appear twice. Input still goes through
+	// the same button container/hotkey logic below.
+	bool GlassTap = false;
+	if(IosGlassButton(pRect, pText, GlassTap))
+	{
+		Ui()->DoButtonLogic(pButtonContainer, Checked, pRect, Flags);
+		return GlassTap ? 1 : 0;
+	}
+
 	CUIRect Text = *pRect;
 
 	if(Checked)
@@ -166,6 +197,15 @@ int CMenus::DoButton_Menu(CButtonContainer *pButtonContainer, const char *pText,
 
 int CMenus::DoButton_MenuTab(CButtonContainer *pButtonContainer, const char *pText, int Checked, const CUIRect *pRect, int Corners, SUIAnimator *pAnimator, const ColorRGBA *pDefaultColor, const ColorRGBA *pActiveColor, const ColorRGBA *pHoverColor, float EdgeRounding, const CCommunityIcon *pCommunityIcon)
 {
+	// Liquudnet: tabs become native UIKit Liquid Glass buttons on iOS, so the
+	// engine-drawn tab (and its hover/animation state) is skipped entirely.
+	bool GlassTap = false;
+	if(IosGlassButton(pRect, pText, GlassTap))
+	{
+		Ui()->DoButtonLogic(pButtonContainer, Checked, pRect, BUTTONFLAG_LEFT);
+		return GlassTap ? 1 : 0;
+	}
+
 	const bool MouseInside = Ui()->HotItem() == pButtonContainer;
 	CUIRect Rect = *pRect;
 
@@ -2391,12 +2431,10 @@ void CMenus::OnRender()
 	// that wants a given id visible re-enables it later in this same frame.
 	// A no-op on non-iOS platforms (see IGraphicsBackend::SetNativeGlassButton).
 #if defined(CONF_PLATFORM_IOS)
-	constexpr int NumGlassButtons = IOS_MAX_GLASS_BUTTONS;
-#else
-	constexpr int NumGlassButtons = 0;
-#endif
-	for(int Id = 0; Id < NumGlassButtons; ++Id)
+	for(int Id = 0; Id < IOS_GLASS_MENU_BUTTONS; ++Id)
 		Graphics()->SetNativeGlassButton(Id, false, 0.0f, 0.0f, 0.0f, 0.0f, "");
+#endif
+	m_GlassButtonCounter = 0;
 
 	if(Client()->State() != IClient::STATE_ONLINE && Client()->State() != IClient::STATE_DEMOPLAYBACK)
 		SetActive(true);
