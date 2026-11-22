@@ -78,7 +78,12 @@ private:
 		float m_Height = 0.0f;
 		std::string m_Label;
 	};
-	SGlassButtonState m_aGlassButtonStates[IOS_GLASS_MENU_BUTTONS];
+#if defined(CONF_PLATFORM_IOS)
+	static constexpr int GLASS_MENU_BUTTON_COUNT = IOS_GLASS_MENU_BUTTONS;
+#else
+	static constexpr int GLASS_MENU_BUTTON_COUNT = 32;
+#endif
+	SGlassButtonState m_aGlassButtonStates[GLASS_MENU_BUTTON_COUNT];
 
 	CUi::SColorPickerPopupContext m_ColorPickerPopupContext;
 	ColorHSLA DoLine_ColorPicker(CButtonContainer *pResetId, float LineSize, float LabelSize, float BottomMargin, CUIRect *pMainRect, const char *pText, unsigned int *pColorValue, ColorRGBA DefaultColor, bool CheckBoxSpacing = true, int *pCheckBoxValue = nullptr, bool Alpha = false);

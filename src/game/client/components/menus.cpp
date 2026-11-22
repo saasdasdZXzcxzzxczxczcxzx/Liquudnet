@@ -130,7 +130,7 @@ bool CMenus::IosGlassButton(const CUIRect *pRect, const char *pText, bool &Tap)
 {
 	Tap = false;
 #if defined(CONF_PLATFORM_IOS)
-	if(m_GlassButtonCounter >= IOS_GLASS_MENU_BUTTONS)
+	if(m_GlassButtonCounter >= GLASS_MENU_BUTTON_COUNT)
 		return false;
 	const int Id = m_GlassButtonCounter++;
 	const CUIRect *pScreen = Ui()->Screen();
@@ -2456,7 +2456,7 @@ void CMenus::OnRender()
 	// that wants a given id visible re-enables it later in this same frame.
 	// A no-op on non-iOS platforms (see IGraphicsBackend::SetNativeGlassButton).
 #if defined(CONF_PLATFORM_IOS)
-	for(int Id = 0; Id < IOS_GLASS_MENU_BUTTONS; ++Id)
+	for(int Id = 0; Id < GLASS_MENU_BUTTON_COUNT; ++Id)
 	{
 		SGlassButtonState &State = m_aGlassButtonStates[Id];
 		if(!State.m_Visible)
