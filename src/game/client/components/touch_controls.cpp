@@ -856,13 +856,20 @@ bool CTouchControls::LoadConfigurationFromFile(int StorageType)
 		return false;
 	}
 
-	if(ParseConfiguration(pFileData, FileLength))
-	{
-		free(pFileData);
-		return true;
-	}
+	const bool Parsed = ParseConfiguration(pFileData, FileLength);
 	free(pFileData);
 	pFileData = nullptr;
+
+	if(Parsed)
+	{
+		// An empty but syntactically valid user config is just as broken for
+		// mobile play as an invalid one: it silently removes every button.
+		// Only treat it as fatal on the startup TYPE_ALL path - an explicit
+		// TYPE_SAVE reload must still respect a deliberately empty layout.
+		if(!(StorageType == IStorage::TYPE_ALL && m_vTouchButtons.empty()))
+			return true;
+		log_warn("touch_controls", "User configuration contains no buttons, falling back to bundled '%s'", CONFIGURATION_FILENAME);
+	}
 
 	// Liquudnet: a stale/broken copy in the writable user directory used to be
 	// picked up first by TYPE_ALL and leave the mobile controls completely
