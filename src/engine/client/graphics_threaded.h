@@ -897,6 +897,7 @@ class CGraphics_Threaded : public IEngineGraphics
 	void AddBackEndWarningIfExists();
 
 	void AdjustViewport(bool SendViewportChangeToBackend);
+	void RefreshViewport() override;
 
 	ivec2 m_ReadPixelPosition = ivec2(0, 0);
 	ColorRGBA *m_pReadPixelColor = nullptr;

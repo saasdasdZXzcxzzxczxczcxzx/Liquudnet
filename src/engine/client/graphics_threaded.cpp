@@ -2153,13 +2153,17 @@ void CGraphics_Threaded::AdjustViewport(bool SendViewportChangeToBackend)
 	m_pBackend->GetDisplayCutoutInsets(InsetLeft, InsetRight);
 	m_ViewportX = InsetLeft;
 	m_ScreenWidth = m_DrawableWidth - InsetLeft - InsetRight;
+	// Reset from the drawable area so this function is idempotent - needed by
+	// RefreshViewport() when the user changes the aspect ratio at runtime.
+	m_ScreenHeight = m_DrawableHeight;
 
-	// adjust the viewport to only allow certain aspect ratios
-	// keep this in sync with backend_vulkan GetSwapImageSize's check
-	if(m_ScreenHeight > 4 * m_ScreenWidth / 5)
+	// Liquudnet: adjustable game view aspect ratio (cl_liquudnet_aspect).
+	// Keep this in sync with backend_vulkan GetSwapImageSize's check.
+	const float ForcedAspect = IGraphics::ForcedAspectFromMode(g_Config.m_ClLiquudnetAspect);
+	if(ForcedAspect > 0.0f && (float)m_ScreenHeight > (float)m_ScreenWidth / ForcedAspect)
 	{
 		m_IsForcedViewport = true;
-		m_ScreenHeight = 4 * m_ScreenWidth / 5;
+		m_ScreenHeight = static_cast<int>(m_ScreenWidth / ForcedAspect);
 	}
 	else
 	{
@@ -2170,6 +2174,11 @@ void CGraphics_Threaded::AdjustViewport(bool SendViewportChangeToBackend)
 	{
 		UpdateViewport(m_ViewportX, 0, m_ScreenWidth, m_ScreenHeight, true);
 	}
+}
+
+void CGraphics_Threaded::RefreshViewport()
+{
+	AdjustViewport(true);
 }
 
 void CGraphics_Threaded::UpdateViewport(int X, int Y, int W, int H, bool ByResize)
