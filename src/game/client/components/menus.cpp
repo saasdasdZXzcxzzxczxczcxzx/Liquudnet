@@ -136,7 +136,21 @@ bool CMenus::IosGlassButton(const CUIRect *pRect, const char *pText, bool &Tap)
 	const CUIRect *pScreen = Ui()->Screen();
 	const float ScaleX = Graphics()->ScreenWidth() / pScreen->w;
 	const float ScaleY = Graphics()->ScreenHeight() / pScreen->h;
-	Graphics()->SetNativeGlassButton(Id, true, pRect->x * ScaleX, pRect->y * ScaleY, pRect->w * ScaleX, pRect->h * ScaleY, pText != nullptr ? pText : "");
+	SGlassButtonState &State = m_aGlassButtonStates[Id];
+	const float X = pRect->x * ScaleX;
+	const float Y = pRect->y * ScaleY;
+	const float Width = pRect->w * ScaleX;
+	const float Height = pRect->h * ScaleY;
+	const char *pLabel = pText != nullptr ? pText : "";
+	const bool Changed = !State.m_Visible || State.m_X != X || State.m_Y != Y || State.m_Width != Width || State.m_Height != Height || State.m_Label != pLabel;
+	State.m_Visible = true;
+	State.m_X = X;
+	State.m_Y = Y;
+	State.m_Width = Width;
+	State.m_Height = Height;
+	State.m_Label = pLabel;
+	if(Changed)
+		Graphics()->SetNativeGlassButton(Id, true, X, Y, Width, Height, pLabel);
 	Tap = Graphics()->ConsumeNativeGlassButtonTap(Id);
 	return true;
 #else
@@ -661,32 +675,43 @@ void CMenus::RenderMenubar(CUIRect Box, IClient::EClientState ClientState)
 		TextRender()->SetRenderFlags(0);
 		TextRender()->SetFontPreset(EFontPreset::DEFAULT_FONT);
 
-		// online menus
-		Box.VSplitLeft(90.0f, &Button, &Box);
+		// Online menus. Keep the tab at least as wide as its localized label
+		// so long translations are never clipped and the following tabs are
+		// pushed to the right automatically.
+		const auto TabWidth = [this](const char *pLabel) {
+			return std::max(90.0f, TextRender()->TextWidth(22.0f, pLabel) + 20.0f);
+		};
+
+		const char *pGameLabel = Localize("Game");
+		Box.VSplitLeft(TabWidth(pGameLabel), &Button, &Box);
 		static CButtonContainer s_GameButton;
-		if(DoButton_MenuTab(&s_GameButton, Localize("Game"), ActivePage == PAGE_GAME, &Button, IGraphics::CORNER_TL))
+		if(DoButton_MenuTab(&s_GameButton, pGameLabel, ActivePage == PAGE_GAME, &Button, IGraphics::CORNER_TL))
 			NewPage = PAGE_GAME;
 
-		Box.VSplitLeft(90.0f, &Button, &Box);
+		const char *pPlayersLabel = Localize("Players");
+		Box.VSplitLeft(TabWidth(pPlayersLabel), &Button, &Box);
 		static CButtonContainer s_PlayersButton;
-		if(DoButton_MenuTab(&s_PlayersButton, Localize("Players"), ActivePage == PAGE_PLAYERS, &Button, IGraphics::CORNER_NONE))
+		if(DoButton_MenuTab(&s_PlayersButton, pPlayersLabel, ActivePage == PAGE_PLAYERS, &Button, IGraphics::CORNER_NONE))
 			NewPage = PAGE_PLAYERS;
 
-		Box.VSplitLeft(130.0f, &Button, &Box);
+		const char *pServerInfoLabel = Localize("Server info");
+		Box.VSplitLeft(TabWidth(pServerInfoLabel), &Button, &Box);
 		static CButtonContainer s_ServerInfoButton;
-		if(DoButton_MenuTab(&s_ServerInfoButton, Localize("Server info"), ActivePage == PAGE_SERVER_INFO, &Button, IGraphics::CORNER_NONE))
+		if(DoButton_MenuTab(&s_ServerInfoButton, pServerInfoLabel, ActivePage == PAGE_SERVER_INFO, &Button, IGraphics::CORNER_NONE))
 			NewPage = PAGE_SERVER_INFO;
 
-		Box.VSplitLeft(90.0f, &Button, &Box);
+		const char *pNetworkLabel = Localize("Browser");
+		Box.VSplitLeft(TabWidth(pNetworkLabel), &Button, &Box);
 		static CButtonContainer s_NetworkButton;
-		if(DoButton_MenuTab(&s_NetworkButton, Localize("Browser"), ActivePage == PAGE_NETWORK, &Button, IGraphics::CORNER_NONE))
+		if(DoButton_MenuTab(&s_NetworkButton, pNetworkLabel, ActivePage == PAGE_NETWORK, &Button, IGraphics::CORNER_NONE))
 			NewPage = PAGE_NETWORK;
 
 		if(GameClient()->m_GameInfo.m_Race)
 		{
-			Box.VSplitLeft(90.0f, &Button, &Box);
+			const char *pGhostLabel = Localize("Ghost");
+			Box.VSplitLeft(TabWidth(pGhostLabel), &Button, &Box);
 			static CButtonContainer s_GhostButton;
-			if(DoButton_MenuTab(&s_GhostButton, Localize("Ghost"), ActivePage == PAGE_GHOST, &Button, IGraphics::CORNER_NONE))
+			if(DoButton_MenuTab(&s_GhostButton, pGhostLabel, ActivePage == PAGE_GHOST, &Button, IGraphics::CORNER_NONE))
 				NewPage = PAGE_GHOST;
 		}
 
@@ -2432,7 +2457,14 @@ void CMenus::OnRender()
 	// A no-op on non-iOS platforms (see IGraphicsBackend::SetNativeGlassButton).
 #if defined(CONF_PLATFORM_IOS)
 	for(int Id = 0; Id < IOS_GLASS_MENU_BUTTONS; ++Id)
+	{
+		SGlassButtonState &State = m_aGlassButtonStates[Id];
+		if(!State.m_Visible)
+			continue;
+		State.m_Visible = false;
+		State.m_Label.clear();
 		Graphics()->SetNativeGlassButton(Id, false, 0.0f, 0.0f, 0.0f, 0.0f, "");
+	}
 #endif
 	m_GlassButtonCounter = 0;
 

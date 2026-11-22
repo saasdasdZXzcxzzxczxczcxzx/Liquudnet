@@ -24,10 +24,14 @@
 #include <game/client/components/skins7.h>
 #include <game/client/lineinput.h>
 #include <game/client/ui.h>
+#if defined(CONF_PLATFORM_IOS)
+#include <ios/ios_main.h>
+#endif
 #include <game/voting.h>
 
 #include <chrono>
 #include <optional>
+#include <string>
 #include <vector>
 
 class CMenus : public CComponent
@@ -64,6 +68,17 @@ private:
 	// draw order and reset at the start of every CMenus::OnRender().
 	int m_GlassButtonCounter = 0;
 	bool IosGlassButton(const CUIRect *pRect, const char *pText, bool &Tap);
+
+	struct SGlassButtonState
+	{
+		bool m_Visible = false;
+		float m_X = 0.0f;
+		float m_Y = 0.0f;
+		float m_Width = 0.0f;
+		float m_Height = 0.0f;
+		std::string m_Label;
+	};
+	SGlassButtonState m_aGlassButtonStates[IOS_GLASS_MENU_BUTTONS];
 
 	CUi::SColorPickerPopupContext m_ColorPickerPopupContext;
 	ColorHSLA DoLine_ColorPicker(CButtonContainer *pResetId, float LineSize, float LabelSize, float BottomMargin, CUIRect *pMainRect, const char *pText, unsigned int *pColorValue, ColorRGBA DefaultColor, bool CheckBoxSpacing = true, int *pCheckBoxValue = nullptr, bool Alpha = false);

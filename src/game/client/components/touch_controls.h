@@ -536,12 +536,6 @@ private:
 	 */
 	std::vector<CTouchButton> m_vTouchButtons;
 
-#if defined(CONF_PLATFORM_IOS)
-	// Liquudnet: per-frame id used for the native UIKit Liquid Glass views
-	// layered over visible in-game touch buttons.
-	int m_TouchGlassButtonCounter = 0;
-#endif
-
 	/**
 	 * The activation states of the different extra menus which are toggle by the extra menu button behavior.
 	 */
