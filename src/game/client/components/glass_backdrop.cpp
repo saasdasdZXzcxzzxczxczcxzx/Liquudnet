@@ -40,8 +40,8 @@ namespace
 					int Sum[4] = {0, 0, 0, 0};
 					for(int dx = -1; dx <= 1; dx++)
 					{
-						const int sx = std::clamp(x + dx, 0, Width - 1);
-						const uint8_t *pPixel = &pData[(static_cast<size_t>(y) * Width + sx) * 4];
+						const int SampleX = std::clamp(x + dx, 0, Width - 1);
+						const uint8_t *pPixel = &pData[(static_cast<size_t>(y) * Width + SampleX) * 4];
 						for(int c = 0; c < 4; c++)
 							Sum[c] += pPixel[c];
 					}
@@ -59,8 +59,8 @@ namespace
 					int Sum[4] = {0, 0, 0, 0};
 					for(int dy = -1; dy <= 1; dy++)
 					{
-						const int sy = std::clamp(y + dy, 0, Height - 1);
-						const uint8_t *pPixel = &pData[(static_cast<size_t>(sy) * Width + x) * 4];
+						const int SampleY = std::clamp(y + dy, 0, Height - 1);
+						const uint8_t *pPixel = &pData[(static_cast<size_t>(SampleY) * Width + x) * 4];
 						for(int c = 0; c < 4; c++)
 							Sum[c] += pPixel[c];
 					}
@@ -106,11 +106,11 @@ void CGlassBackdrop::CBlurJob::Run()
 	// proper area-average downsample isn't worth the extra cost here.
 	for(int dy = 0; dy < DstHeight; dy++)
 	{
-		const int sy = std::min(SrcHeight - 1, dy * SrcHeight / DstHeight);
+		const int SrcY = std::min(SrcHeight - 1, dy * SrcHeight / DstHeight);
 		for(int dx = 0; dx < DstWidth; dx++)
 		{
-			const int sx = std::min(SrcWidth - 1, dx * SrcWidth / DstWidth);
-			const uint8_t *pSrc = &m_SourceImage.m_pData[(static_cast<size_t>(sy) * SrcWidth + sx) * 4];
+			const int SrcX = std::min(SrcWidth - 1, dx * SrcWidth / DstWidth);
+			const uint8_t *pSrc = &m_SourceImage.m_pData[(static_cast<size_t>(SrcY) * SrcWidth + SrcX) * 4];
 			uint8_t *pDst = &m_ResultImage.m_pData[(static_cast<size_t>(dy) * DstWidth + dx) * 4];
 			mem_copy(pDst, pSrc, 4);
 		}
