@@ -12,33 +12,8 @@ class CUIRect
 {
 	static IGraphics *ms_pGraphics;
 
-	// The current "glass backdrop" for Liquid Glass panels: a blurred capture
-	// of the scene, refreshed periodically by CGlassBackdrop, drawn beneath
-	// the gradient/highlight tint in Draw4() so panels read as real frosted
-	// glass instead of a flat color. ms_GlassBackdropWidth/Height are the
-	// backdrop's coverage in UI units (see CUi::Screen(), not pixels), used
-	// to convert a CUIRect's position into the matching UV coordinates.
-	// An invalid texture handle (the default) means "no capture yet" and
-	// Draw4() falls back to the plain gradient look.
-	static IGraphics::CTextureHandle ms_GlassBackdropTexture;
-	static float ms_GlassBackdropWidth;
-	static float ms_GlassBackdropHeight;
-
 public:
 	static void Init(IGraphics *pGraphics) { ms_pGraphics = pGraphics; }
-
-	/**
-	 * Sets the current glass backdrop texture and the UI-space screen size
-	 * it covers. Called once per frame by CGlassBackdrop before any UI is
-	 * rendered. Pass an invalid CTextureHandle to clear it (e.g. on shutdown
-	 * or before the first capture completes).
-	 */
-	static void SetGlassBackdrop(IGraphics::CTextureHandle Texture, float ScreenWidth, float ScreenHeight)
-	{
-		ms_GlassBackdropTexture = Texture;
-		ms_GlassBackdropWidth = ScreenWidth;
-		ms_GlassBackdropHeight = ScreenHeight;
-	}
 
 	float x, y, w, h;
 
