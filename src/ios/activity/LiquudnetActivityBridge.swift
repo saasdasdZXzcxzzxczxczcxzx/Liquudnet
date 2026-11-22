@@ -32,6 +32,18 @@ public class LiquudnetActivityBridge: NSObject {
         NSLog("[LiquudnetActivity] %@", message)
     }
 
+    // ActivityKit and UIKit's application-icon APIs must run on the main
+    // thread. The engine calls this bridge from its render thread, so hop
+    // over synchronously (unless we're already on main) and keep the
+    // start/update/end calls ordered with the engine's log diagnostics.
+    private static func runOnMain(_ work: @escaping () -> Void) {
+        if Thread.isMainThread {
+            work()
+        } else {
+            DispatchQueue.main.sync(execute: work)
+        }
+    }
+
     /// Full, human-readable snapshot of ActivityKit state. Called from the
     /// engine right after a start attempt and once during startup, so the
     /// reason a Dynamic Island didn't appear is visible in the game log.
@@ -63,6 +75,10 @@ public class LiquudnetActivityBridge: NSObject {
     /// on iOS < 16.2. Every refusal is logged (see `diagnostics`).
     @objc public static func start(withStatus status: String) {
         log("start requested, status=\(status), mainThread=\(Thread.isMainThread)")
+        if !Thread.isMainThread {
+            runOnMain { Self.start(withStatus: status) }
+            return
+        }
         if #available(iOS 16.2, *) {
             guard activity == nil else {
                 lastError = "already started in this process"
@@ -101,6 +117,10 @@ public class LiquudnetActivityBridge: NSObject {
     /// Updates the running Live Activity's status text. No-op if none is
     /// running.
     @objc public static func update(withStatus status: String) {
+        if !Thread.isMainThread {
+            runOnMain { Self.update(withStatus: status) }
+            return
+        }
         if #available(iOS 16.2, *) {
             guard let typedActivity = activity as? Activity<LiquudnetActivityAttributes> else {
                 log("update skipped: no stored activity")
@@ -121,6 +141,10 @@ public class LiquudnetActivityBridge: NSObject {
     /// this type left over from a previous process (e.g. one that was killed
     /// instead of quitting cleanly).
     @objc public static func end() {
+        if !Thread.isMainThread {
+            runOnMain { Self.end() }
+            return
+        }
         if #available(iOS 16.2, *) {
             activity = nil
             Task {
