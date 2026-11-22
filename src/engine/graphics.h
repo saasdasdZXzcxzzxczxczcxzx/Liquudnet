@@ -278,6 +278,23 @@ public:
 	int ScreenHeight() const { return m_ScreenHeight; }
 	vec2 ScreenSize() const { return vec2(m_ScreenWidth, m_ScreenHeight); }
 	float ScreenAspect() const { return (float)ScreenWidth() / (float)ScreenHeight(); }
+
+	// Liquudnet: share the aspect-ratio table between the engine's viewport
+	// adjustment and the graphics backends. Mode 0 means "use the whole
+	// drawable area", all others clamp the view to at least that aspect.
+	static float ForcedAspectFromMode(int Mode)
+	{
+		switch(Mode)
+		{
+		case 1: return 4.0f / 3.0f;
+		case 2: return 16.0f / 9.0f;
+		case 3: return 16.0f / 10.0f;
+		case 4: return 5.0f / 4.0f;
+		case 5: return 1.0f;
+		default: return 0.0f;
+		}
+	}
+
 	float ScreenHiDPIScale() const { return m_ScreenHiDPIScale; }
 	int WindowWidth() const { return m_ScreenWidth / m_ScreenHiDPIScale; }
 	int WindowHeight() const { return m_ScreenHeight / m_ScreenHiDPIScale; }
@@ -304,6 +321,8 @@ public:
 	virtual void ResizeToScreen() = 0;
 	virtual void GotResized(int w, int h, int RefreshRate) = 0;
 	virtual void UpdateViewport(int X, int Y, int W, int H, bool ByResize) = 0;
+	// Liquudnet: recompute the viewport after cl_liquudnet_aspect changed.
+	virtual void RefreshViewport() = 0;
 	virtual bool IsScreenKeyboardShown() = 0;
 
 	/**
