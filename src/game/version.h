@@ -3,8 +3,9 @@
 #ifndef GAME_VERSION_H
 #define GAME_VERSION_H
 
-// ddnet
-#define GAME_NAME "DDNet"
+// Liquudnet: user-visible client name. Protocol identifiers and the
+// DDNET_VERSION_NUMBER below stay unchanged for server compatibility.
+#define GAME_NAME "Liquudnet"
 #define DDNET_VERSION_NUMBER 20030
 extern const char *GIT_SHORTREV_HASH;
 #ifndef GAME_RELEASE_VERSION_INTERNAL
