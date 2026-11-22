@@ -25,10 +25,6 @@ void CMenus::RenderSettingsLiquudnet(CUIRect MainView)
 	MainView.HSplitTop(30.0f, &Header, &MainView);
 	Ui()->DoLabel(&Header, Localize("Liquudnet"), 20.0f, TEXTALIGN_ML);
 
-	MainView.HSplitTop(10.0f, nullptr, &MainView);
-	MainView.HSplitTop(40.0f, &Label, &MainView);
-	Ui()->DoLabel(&Label, Localize("Settings specific to this client. The original client's own settings stay on the \"DDNet\" tab."), 14.0f, TEXTALIGN_TL);
-
 	// --- Player trails ------------------------------------------------------
 	// Purely cosmetic fading trail behind player tees (see
 	// game/client/components/player_trail.h). Enable checkbox is folded into
@@ -52,24 +48,10 @@ void CMenus::RenderSettingsLiquudnet(CUIRect MainView)
 		Ui()->DoScrollbarOption(&g_Config.m_ClPlayerTrailWidth, &g_Config.m_ClPlayerTrailWidth, &Button, Localize("Trail width"), 2, 64);
 	}
 
-	// --- Real iOS Liquid Glass experiment ---------------------------------
-	// A single native UIKit button (see ios/ios_main.mm,
-	// IGraphics::SetNativeGlassButton), using the real system Liquid Glass
-	// material on iOS 26+ instead of the engine's own hand-rolled backdrop
-	// blur (CUIRect::SetGlassBackdrop). Proof of concept only: the engine's
-	// own UI is drawn into one OpenGL surface, not as real platform views,
-	// so this approach only works per-element for things willing to be an
-	// actual native view - it is not a path to giving the whole menu system
-	// real system glass.
+	// Native UIKit Liquid Glass button (see ios/ios_main.mm,
+	// IGraphics::SetNativeGlassButton). The engine's old frosted-glass
+	// backdrop was removed - it overheated iOS devices.
 	MainView.HSplitTop(20.0f, nullptr, &MainView);
-	MainView.HSplitTop(24.0f, &Label, &MainView);
-	Ui()->DoLabel(&Label, Localize("Real iOS Liquid Glass (experimental)"), 16.0f, TEXTALIGN_ML);
-
-	MainView.HSplitTop(6.0f, nullptr, &MainView);
-	MainView.HSplitTop(34.0f, &Label, &MainView);
-	Ui()->DoLabel(&Label, Localize("iOS only. Renders as a real system-glass button on top of the game, not an engine-drawn one. Tap it to check the round trip back into the game works."), 12.0f, TEXTALIGN_TL);
-
-	MainView.HSplitTop(10.0f, nullptr, &MainView);
 	MainView.HSplitTop(40.0f, &Button, &MainView);
 	Button.VSplitLeft(280.0f, &Button, nullptr);
 
@@ -101,27 +83,8 @@ void CMenus::RenderSettingsLiquudnet(CUIRect MainView)
 	}
 #endif
 
-	MainView.HSplitTop(12.0f, nullptr, &MainView);
-	MainView.HSplitTop(24.0f, &Label, &MainView);
-	char aTapLabel[32];
-	str_format(aTapLabel, sizeof(aTapLabel), Localize("Tapped: %d"), s_GlassButtonTapCount);
-	Ui()->DoLabel(&Label, aTapLabel, 14.0f, TEXTALIGN_ML);
-
-	// --- Dynamic Island / Live Activity experiment ------------------------
-	// A single toggleable Live Activity (see src/ios/activity/,
-	// IGraphics::SetLiveActivityActive), proof of concept only: the status
-	// text is currently a fixed placeholder, not wired up to real in-game
-	// state (e.g. the player's current score/position) yet - that's a
-	// separate follow-up.
+	// --- Dynamic Island / Live Activity -----------------------------------
 	MainView.HSplitTop(20.0f, nullptr, &MainView);
-	MainView.HSplitTop(24.0f, &Label, &MainView);
-	Ui()->DoLabel(&Label, Localize("Dynamic Island (experimental)"), 16.0f, TEXTALIGN_ML);
-
-	MainView.HSplitTop(6.0f, nullptr, &MainView);
-	MainView.HSplitTop(34.0f, &Label, &MainView);
-	Ui()->DoLabel(&Label, Localize("iOS 16.2+ only. Starts a Live Activity shown in the Dynamic Island and on the Lock Screen, with a placeholder status for now."), 12.0f, TEXTALIGN_TL);
-
-	MainView.HSplitTop(10.0f, nullptr, &MainView);
 	MainView.HSplitTop(40.0f, &Button, &MainView);
 	Button.VSplitLeft(280.0f, &Button, nullptr);
 

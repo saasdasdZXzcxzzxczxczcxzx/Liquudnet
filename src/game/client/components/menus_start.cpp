@@ -37,10 +37,9 @@ void CMenusStart::RenderStartMenu(CUIRect MainView)
 
 	// Liquudnet: bumped up from the upstream 10.0f towards a rounder, more
 	// "Liquid Glass" capsule shape for the main action row (Quit/Settings/
-	// Run server/Editor/Demos/Play) - these already get the frosted-glass
-	// backdrop automatically (see CUIRect::Draw4/SetGlassBackdrop, driven
-	// by their background alpha being well under the 0.98 cutoff), so this
-	// is purely the corner radius catching up to match.
+	// Run server/Editor/Demos/Play). The old engine-side frosted-glass
+	// backdrop was removed for thermal reasons; on iOS the native UIKit
+	// buttons (below) supply the real Liquid Glass look.
 	const float Rounding = 18.0f;
 	const float VMargin = MainView.w / 2 - 190.0f;
 
