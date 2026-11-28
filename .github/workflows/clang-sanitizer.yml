@@ -59,7 +59,7 @@ jobs:
       run: |
         cd clang-sanitizer
         set +e
-        ./DDNet "cl_download_skins 0;quit"
+        ./Liquudnet "cl_download_skins 0;quit"
         client_result=$?
         ./DDNet-Server shutdown
         server_result=$?
