@@ -121,6 +121,27 @@ void IosSetLiveActivityActive(bool Active, const char *pStatusText);
 bool IosIsLiveActivityRunning();
 
 /**
+ * Reads a human-readable snapshot of ActivityKit's state - iOS version,
+ * whether Live Activities are available/enabled, whether one is currently
+ * stored/running, and the last error ActivityKit gave for a start/update
+ * attempt (if any). The same text is always written to the normal engine
+ * log (tag "activity") after every start/end, but that log usually isn't
+ * reachable without a Mac and Console.app/Xcode, so this lets the engine
+ * surface it directly in-game instead (see the Liquudnet settings tab) -
+ * necessary for diagnosing "Live Activities is enabled in Settings but it
+ * still won't start" from the device alone.
+ *
+ * @ingroup iOS
+ *
+ * @param pBuf Buffer that receives the UTF-8 diagnostics text on success.
+ * @param BufSize Size of `pBuf`, in bytes.
+ *
+ * @return `true` on success, `false` if the diagnostics text couldn't be
+ * produced at all (in which case `pBuf` is left untouched).
+ */
+bool IosGetLiveActivityDiagnostics(char *pBuf, size_t BufSize);
+
+/**
  * Finds the on-disk path of the system UI font (San Francisco), so the
  * engine's own FreeType-based text renderer can load it like any other
  * bundled font file.

@@ -242,6 +242,18 @@ bool IosIsLiveActivityRunning()
 	return [LiquudnetActivityBridge isRunning];
 }
 
+bool IosGetLiveActivityDiagnostics(char *pBuf, size_t BufSize)
+{
+	@autoreleasepool
+	{
+		NSString *pDiagnostics = [LiquudnetActivityBridge diagnostics];
+		if(pDiagnostics == nil)
+			return false;
+		str_copy(pBuf, [pDiagnostics UTF8String], (int)BufSize);
+		return true;
+	}
+}
+
 bool IosGetSystemFontPath(char *pBuf, size_t BufSize)
 {
 	// kCTFontUIFontSystem gives the regular-weight system font (San

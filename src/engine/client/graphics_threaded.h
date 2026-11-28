@@ -715,6 +715,7 @@ public:
 	// implemented on iOS, a no-op on all other platforms.
 	virtual void SetLiveActivityActive(bool Active, const char *pStatusText) = 0;
 	virtual bool IsLiveActivityRunning() = 0;
+	virtual bool GetLiveActivityDiagnostics(char *pBuf, size_t BufSize) = 0;
 	virtual void NotifyWindow() = 0;
 	virtual bool IsScreenKeyboardShown() = 0;
 
@@ -1266,6 +1267,7 @@ public:
 
 	void SetLiveActivityActive(bool Active, const char *pStatusText) override { m_pBackend->SetLiveActivityActive(Active, pStatusText); }
 	bool IsLiveActivityRunning() override { return m_pBackend->IsLiveActivityRunning(); }
+	bool GetLiveActivityDiagnostics(char *pBuf, size_t BufSize) override { return m_pBackend->GetLiveActivityDiagnostics(pBuf, BufSize); }
 
 	bool GetDriverVersion(EGraphicsDriverAgeType DriverAgeType, int &Major, int &Minor, int &Patch, const char *&pName, EBackendType BackendType) override { return m_pBackend->GetDriverVersion(DriverAgeType, Major, Minor, Patch, pName, BackendType); }
 	bool IsConfigModernAPI() override { return m_pBackend->IsConfigModernAPI(); }

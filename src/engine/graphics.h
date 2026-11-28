@@ -743,6 +743,20 @@ public:
 	 */
 	virtual bool IsLiveActivityRunning() = 0;
 
+	/**
+	 * Human-readable ActivityKit diagnostics (iOS version, availability,
+	 * whether one is running, and the last error ActivityKit gave), so the
+	 * reason a Live Activity won't start (even with Live Activities enabled
+	 * in iOS Settings) can be read directly in-game, without a Mac. See
+	 * IosGetLiveActivityDiagnostics. A no-op everywhere except iOS.
+	 *
+	 * @param pBuf Buffer that receives the UTF-8 diagnostics text on success.
+	 * @param BufSize Size of `pBuf`, in bytes.
+	 *
+	 * @return `true` on success, `false` otherwise (including on platforms without one, in which case `pBuf` is left untouched).
+	 */
+	virtual bool GetLiveActivityDiagnostics(char *pBuf, size_t BufSize) = 0;
+
 protected:
 	CTextureHandle CreateTextureHandle(int Index)
 	{

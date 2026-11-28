@@ -1655,6 +1655,15 @@ bool CGraphicsBackend_SDL_GL::IsLiveActivityRunning()
 #endif
 }
 
+bool CGraphicsBackend_SDL_GL::GetLiveActivityDiagnostics(char *pBuf, size_t BufSize)
+{
+#if defined(CONF_PLATFORM_IOS)
+	return IosGetLiveActivityDiagnostics(pBuf, BufSize);
+#else
+	return false;
+#endif
+}
+
 void CGraphicsBackend_SDL_GL::NotifyWindow()
 {
 	// Minimum version 2.0.16, after version 2.0.22 the naming is changed to 2.24.0 etc.

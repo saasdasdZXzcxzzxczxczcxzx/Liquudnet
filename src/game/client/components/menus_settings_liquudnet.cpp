@@ -70,6 +70,19 @@ void CMenus::RenderSettingsLiquudnet(CUIRect MainView)
 	{
 		Graphics()->SetLiveActivityActive(!LiveActivityRunning, "Playing Liquudnet");
 	}
+
+	// Raw ActivityKit diagnostics (see IosGetLiveActivityDiagnostics): this
+	// is the actual reason a Live Activity doesn't start even when Live
+	// Activities are allowed in iOS Settings (e.g. "lastError=..."), shown
+	// directly here because there's usually no Mac/Console.app around to
+	// read the engine log on a real device.
+	MainView.HSplitTop(8.0f, nullptr, &MainView);
+	MainView.HSplitTop(60.0f, &Label, &MainView);
+	char aDiagnostics[256];
+	if(Graphics()->GetLiveActivityDiagnostics(aDiagnostics, sizeof(aDiagnostics)))
+	{
+		Ui()->DoLabel(&Label, aDiagnostics, 10.0f, TEXTALIGN_ML, {.m_MaxWidth = Label.w});
+	}
 #else
 	DoButton_Menu(&s_LiveActivityToggleId, Localize("Dynamic Island (iOS only)"), 0, &Button);
 #endif

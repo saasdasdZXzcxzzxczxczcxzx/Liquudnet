@@ -139,6 +139,7 @@ public:
 	bool ConsumeNativeGlassButtonTap(int Id) override { return false; }
 	void SetLiveActivityActive(bool Active, const char *pStatusText) override {}
 	bool IsLiveActivityRunning() override { return false; }
+	bool GetLiveActivityDiagnostics(char *pBuf, size_t BufSize) override { return false; }
 	void NotifyWindow() override {}
 	bool IsScreenKeyboardShown() override { return false; }
 	void WindowDestroyNtf(uint32_t WindowId) override {}
