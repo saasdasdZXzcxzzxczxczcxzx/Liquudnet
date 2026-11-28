@@ -184,11 +184,20 @@ public class LiquudnetActivityBridge: NSObject {
     }
 
     private static func appIconPngData() -> Data {
-        guard let url = Bundle.main.url(forResource: "DDNet_256x256x32", withExtension: "png"),
-              let data = try? Data(contentsOf: url),
-              let image = UIImage(data: data) else
+        // The app icon on iOS lives in Assets.xcassets (AppIcon.appiconset),
+        // compiled into Assets.car - there is no loose "<Name>.png" file in
+        // the bundle to reach with Bundle.main.url(forResource:), and in
+        // particular not one literally named "DDNet_256x256x32" (that file
+        // is other/icons/DDNet_256x256x32.png, a completely different,
+        // desktop-only packaging asset that was never part of the iOS
+        // target at all). Reading CFBundleIcons out of Info.plist and
+        // loading the name it points to via UIImage(named:) is the actual
+        // supported way to get "the app's own icon, whatever it's called
+        // right now" - it doesn't hardcode an asset name, so a future icon
+        // rename won't quietly break this again.
+        guard let icon = Self.currentAppIcon() else
         {
-            log("app icon PNG resource missing from app bundle")
+            log("app icon not found via CFBundleIcons/UIImage(named:)")
             return Data()
         }
         // The bundled 256x256 icon is ~12 KB. ActivityKit content states are
@@ -198,9 +207,30 @@ public class LiquudnetActivityBridge: NSObject {
         let size = CGSize(width: 48, height: 48)
         let renderer = UIGraphicsImageRenderer(size: size)
         let thumbnail = renderer.image { _ in
-            image.draw(in: CGRect(origin: .zero, size: size))
+            icon.draw(in: CGRect(origin: .zero, size: size))
         }
         return thumbnail.pngData() ?? Data()
+    }
+
+    /// The app's own icon, found the way Apple's docs recommend (reading
+    /// CFBundleIcons out of Info.plist rather than hardcoding an asset
+    /// name): the primary icon's last entry is the one actually used, per
+    /// Apple's long-standing convention for the `CFBundleIconFiles` array.
+    private static func currentAppIcon() -> UIImage? {
+        if let iconsDictionary = Bundle.main.infoDictionary?["CFBundleIcons"] as? [String: Any],
+           let primaryIconsDictionary = iconsDictionary["CFBundlePrimaryIcon"] as? [String: Any],
+           let iconFiles = primaryIconsDictionary["CFBundleIconFiles"] as? [String],
+           let lastIcon = iconFiles.last,
+           let image = UIImage(named: lastIcon)
+        {
+            return image
+        }
+        // Fallback: Xcode is supposed to inject CFBundleIcons automatically
+        // for an asset-catalog icon (ASSETCATALOG_COMPILER_APPICON_NAME, set
+        // in CMakeLists.txt), but just in case that didn't happen, try the
+        // appiconset's own name directly - that's "AppIcon" here, matching
+        // ASSETCATALOG_COMPILER_APPICON_NAME.
+        return UIImage(named: "AppIcon")
     }
 
     @objc public static var isRunning: Bool {
