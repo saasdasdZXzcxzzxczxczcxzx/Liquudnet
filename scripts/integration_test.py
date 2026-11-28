@@ -1024,7 +1024,7 @@ def main():
 	parser.add_argument("test", metavar="TEST", nargs="?", help="name of test to run")
 	args = parser.parse_args()
 
-	ddnet = os.path.join(args.builddir, f"DDNet{EXE_SUFFIX}")
+	ddnet = os.path.join(args.builddir, f"Liquudnet{EXE_SUFFIX}")
 	ddnet_server = os.path.join(args.builddir, f"DDNet-Server{EXE_SUFFIX}")
 	ddnet_mastersrv = os.path.join(args.builddir, f"mastersrv{EXE_SUFFIX}")
 	if not os.path.exists(ddnet):
